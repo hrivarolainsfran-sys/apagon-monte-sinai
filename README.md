@@ -5,8 +5,8 @@ Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 | Archivo | Para quién | Qué hace |
 |---|---|---|
 | `index.html` | Jugadores (Operador de cada equipo) | Mochila, Refugio, radar GPS, escáner QR, SOS |
-| `sombra.html` | Monitores-Sombra (PIN `6666`) | Escanean la tarjeta del equipo que iluminaron → pierde 50% de la mochila |
-| `admin.html` | Coordinación (PIN `2026`) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
+| `sombra.html` | Monitores-Sombra (PIN de Sombra) | Escanean la tarjeta del equipo que iluminaron → pierde 50% de la mochila |
+| `admin.html` | Coordinación (PIN de admin) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
 | `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 4 tarjetas de equipo (Rojo, Azul, Verde, Amarillo) |
 | `js/config.js` | Organización | Equipos, estaciones, recursos, reglas, PINs, teléfono SOS |
 
@@ -18,7 +18,7 @@ Para agregar un logo, poné la imagen en esta carpeta y escribí su nombre en `b
    - *Compilación → Firestore Database → Crear base de datos* (ubicación `southamerica-east1`, São Paulo).
    - En *Reglas*, pegá el contenido de `firestore.rules` y publicá.
    - *Configuración del proyecto → Tus apps → Web (</>)* → copiá el objeto `firebaseConfig` y pegalo en `js/config.js` en `firebase: { ... }`.
-2. **Editá `js/config.js`**: PINs, teléfono de coordinación, nombres de equipos y estaciones, cantidades.
+2. **Editá `js/config.js`**: PINs (como hash, ver comentario en el archivo), teléfono de coordinación, nombres de equipos y estaciones, cantidades.
 3. **Publicá la carpeta** (necesita HTTPS para cámara y GPS):
    - Lo más fácil: https://app.netlify.com/drop → arrastrá la carpeta `apagon` (con cuenta gratis queda fija).
    - Copiá la URL que te da y ponela en `publicUrl` de `config.js`; volvé a subir.
