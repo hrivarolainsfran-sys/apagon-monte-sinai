@@ -7,7 +7,8 @@ export const GAME = {
   // Cambiá este ID para empezar una partida totalmente nueva (otra "sala").
   gameId: 'apagon-monte-sinai-2026',
   title: 'APAGÓN',
-  brand: { name: 'Juegos Josema y Sol', tagline: 'Bailando en el desierto', logo: 'logo.png' },
+  // logo: nombre de un archivo de imagen en la carpeta (ej. 'logo.png'); vacío = sin logo.
+  brand: { name: 'Juego Nocturno', tagline: 'Campamento Monte Sinaí', logo: '' },
 
   // PINs (¡cambialos antes del campamento!)
   adminPin: '2026',   // panel de administración
@@ -63,12 +64,10 @@ export const GAME = {
   base: { code: 'APG-B-RF7K2', name: 'Refugio (Base)' },
 
   teams: [
-    { id: 't1', name: 'Yacarés',  color: '#ff3b30', code: 'APG-T-YK4M7' },
-    { id: 't2', name: 'Halcones', color: '#ff9500', code: 'APG-T-HL9C2' },
-    { id: 't3', name: 'Zorros',   color: '#ffd60a', code: 'APG-T-ZR3P8' },
-    { id: 't4', name: 'Búhos',    color: '#34c759', code: 'APG-T-BH6W5' },
-    { id: 't5', name: 'Jaguares', color: '#0a84ff', code: 'APG-T-JG2N9' },
-    { id: 't6', name: 'Tatús',    color: '#bf5af2', code: 'APG-T-TC7Q4' },
+    { id: 't1', name: 'Rojo',     color: '#ff3b30', code: 'APG-T-RJ4M7' },
+    { id: 't2', name: 'Azul',     color: '#2f8cff', code: 'APG-T-AZ9C2' },
+    { id: 't3', name: 'Verde',    color: '#34c759', code: 'APG-T-VD3P8' },
+    { id: 't4', name: 'Amarillo', color: '#ffd60a', code: 'APG-T-AM6W5' },
   ],
 
   // uses = cuántas veces se puede saquear en total (entre todos los equipos) antes de agotarse.

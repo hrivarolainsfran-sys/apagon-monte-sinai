@@ -32,7 +32,7 @@ export function toast(text, ok = true) {
 export function brandHeader() {
   const b = GAME.brand || {};
   return `<div class="brand">
-    <img src="${esc(b.logo || 'logo.png')}" alt="" onerror="this.remove()">
+    ${b.logo ? `<img src="${esc(b.logo)}" alt="" onerror="this.remove()">` : ''}
     <div><div class="brand-name">${esc(b.name || '')}</div><div class="brand-tag">${esc(b.tagline || '')}</div></div>
   </div>`;
 }
