@@ -31,7 +31,7 @@ Para agregar un logo, poné la imagen en esta carpeta y escribí su nombre en `b
 - La mochila aguanta **6**. Hay que volver al **Refugio** y escanear su QR para asegurar lo que llevan.
 - Si una **Sombra** los ilumina con la linterna, el Portador entrega la tarjeta del equipo → pierden la **mitad de la mochila** (lo del Refugio está a salvo). Después tienen 3 min de inmunidad.
 - Cada estación se puede volver a saquear a los 4 min y **se agota** después de cierta cantidad de usos en total.
-- Con 6 de cada recurso en el Refugio encienden el **Faro de Rescate** (+100 / +60 / +40 / +20 pts al 1°, 2°, 3° y 4°).
+- Con 7 de cada recurso en el Refugio encienden el **Faro de Rescate** (+100 / +60 / +40 / +20 pts al 1°, 2°, 3° y 4°).
 - **Interferencia:** si la pantalla queda encendida 60 s seguidos, la app se bloquea 30 s. Apagar y prender la pantalla reinicia el contador.
 
 ## Notas técnicas
