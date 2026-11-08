@@ -46,7 +46,7 @@ export const GAME = {
 
   rules: {
     backpackMax: 6,              // cuántos recursos puede llevar un equipo antes de volver a la base
-    faroGoal: { agua: 6, energia: 6, medicina: 6, senal: 6 }, // para encender el Faro de Rescate
+    faroGoal: { agua: 7, energia: 7, medicina: 7, senal: 7 }, // para encender el Faro de Rescate
     faroBonus: [100, 60, 40, 20], // puntos extra para el 1°, 2°, 3°, 4° faro encendido
     cooldownMin: 4,              // minutos antes de que un equipo pueda volver a saquear la misma estación
     captureLossPct: 50,          // % de la mochila que se pierde al ser iluminado por una Sombra
@@ -75,17 +75,17 @@ export const GAME = {
   // lat/lng se cargan desde el panel admin con "Anclar aquí" (no hace falta escribirlas).
   // radar:false = estación secreta, no aparece en el radar.
   stations: [
-    { id: 's01', code: 'APG-S-W8KD3', name: 'Pozo Viejo',          resource: 'agua',     amount: 1, uses: 15 },
-    { id: 's02', code: 'APG-S-A2RX9', name: 'Arroyo Oscuro',       resource: 'agua',     amount: 2, uses: 10 },
-    { id: 's03', code: 'APG-S-T5NB4', name: 'Tanque Roto',         resource: 'agua',     amount: 3, uses: 6, radar: false },
-    { id: 's04', code: 'APG-S-G7PM2', name: 'Generador',           resource: 'energia',  amount: 1, uses: 15 },
-    { id: 's05', code: 'APG-S-E3VH8', name: 'Torre Eléctrica',     resource: 'energia',  amount: 2, uses: 10 },
-    { id: 's06', code: 'APG-S-B9QJ6', name: 'Batería Abandonada',  resource: 'energia',  amount: 3, uses: 6, radar: false },
-    { id: 's07', code: 'APG-S-M4CF7', name: 'Enfermería',          resource: 'medicina', amount: 1, uses: 15 },
-    { id: 's08', code: 'APG-S-K6LT3', name: 'Botiquín Perdido',    resource: 'medicina', amount: 2, uses: 10 },
-    { id: 's09', code: 'APG-S-C8YW5', name: 'Carpa Médica',        resource: 'medicina', amount: 3, uses: 6, radar: false },
-    { id: 's10', code: 'APG-S-N2HZ8', name: 'Antena',              resource: 'senal',    amount: 1, uses: 15 },
-    { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 10 },
-    { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 6, radar: false },
+    { id: 's01', code: 'APG-S-W8KD3', name: 'Pozo Viejo',          resource: 'agua',     amount: 1, uses: 10 },
+    { id: 's02', code: 'APG-S-A2RX9', name: 'Arroyo Oscuro',       resource: 'agua',     amount: 2, uses: 7 },
+    { id: 's03', code: 'APG-S-T5NB4', name: 'Tanque Roto',         resource: 'agua',     amount: 3, uses: 4, radar: false },
+    { id: 's04', code: 'APG-S-G7PM2', name: 'Generador',           resource: 'energia',  amount: 1, uses: 10 },
+    { id: 's05', code: 'APG-S-E3VH8', name: 'Torre Eléctrica',     resource: 'energia',  amount: 2, uses: 7 },
+    { id: 's06', code: 'APG-S-B9QJ6', name: 'Batería Abandonada',  resource: 'energia',  amount: 3, uses: 4, radar: false },
+    { id: 's07', code: 'APG-S-M4CF7', name: 'Enfermería',          resource: 'medicina', amount: 1, uses: 10 },
+    { id: 's08', code: 'APG-S-K6LT3', name: 'Botiquín Perdido',    resource: 'medicina', amount: 2, uses: 7 },
+    { id: 's09', code: 'APG-S-C8YW5', name: 'Carpa Médica',        resource: 'medicina', amount: 3, uses: 4, radar: false },
+    { id: 's10', code: 'APG-S-N2HZ8', name: 'Antena',              resource: 'senal',    amount: 1, uses: 10 },
+    { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 7 },
+    { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 4, radar: false },
   ],
 };
