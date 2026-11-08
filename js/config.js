@@ -1,0 +1,91 @@
+// =====================================================================
+//  APAGÓN — Configuración del juego
+//  Editá este archivo para adaptar el juego a tu campamento.
+// =====================================================================
+
+export const GAME = {
+  // Cambiá este ID para empezar una partida totalmente nueva (otra "sala").
+  gameId: 'apagon-monte-sinai-2026',
+  title: 'APAGÓN',
+  brand: { name: 'Juegos Josema y Sol', tagline: 'Bailando en el desierto', logo: 'logo.png' },
+
+  // PINs (¡cambialos antes del campamento!)
+  adminPin: '2026',   // panel de administración
+  sombraPin: '6666',  // modo Sombra (monitores cazadores)
+
+  // Contacto que aparece al tocar el botón SOS
+  coordinator: { name: 'Coordinación del campamento', phone: '+595 981 000000' },
+
+  // URL pública donde va a quedar alojada la app (para el QR de inicio).
+  // Si la dejás vacía se usa la dirección desde donde abrís imprimir.html.
+  publicUrl: '',
+
+  // ---------------------------------------------------------------
+  //  FIREBASE: pegá acá la configuración de tu proyecto.
+  //  Si queda en null, la app corre en MODO DEMO (datos solo en ese
+  //  dispositivo; sirve para probar, NO para jugar con varios celulares).
+  // ---------------------------------------------------------------
+  // (Esta configuración web de Firebase es pública por diseño; la protección está en firestore.rules.)
+  firebase: {
+    apiKey: 'AIzaSyAPMrWtfp53Zrbf0p1jC-zOYkIjlC1CZZc',
+    authDomain: 'apagon-monte-sinai.firebaseapp.com',
+    projectId: 'apagon-monte-sinai',
+    storageBucket: 'apagon-monte-sinai.firebasestorage.app',
+    messagingSenderId: '523054484390',
+    appId: '1:523054484390:web:de4610716856f97ec3dd67',
+  },
+
+  resources: [
+    { id: 'agua',     name: 'Agua',     icon: '💧', points: 10 },
+    { id: 'energia',  name: 'Energía',  icon: '⚡', points: 10 },
+    { id: 'medicina', name: 'Medicina', icon: '✚', points: 15 },
+    { id: 'senal',    name: 'Señal',    icon: '📡', points: 15 },
+  ],
+
+  rules: {
+    backpackMax: 6,              // cuántos recursos puede llevar un equipo antes de volver a la base
+    faroGoal: { agua: 6, energia: 6, medicina: 6, senal: 6 }, // para encender el Faro de Rescate
+    faroBonus: [100, 60, 40, 20], // puntos extra para el 1°, 2°, 3°, 4° faro encendido
+    cooldownMin: 4,              // minutos antes de que un equipo pueda volver a saquear la misma estación
+    captureLossPct: 50,          // % de la mochila que se pierde al ser iluminado por una Sombra
+    captureImmunitySec: 180,     // segundos de inmunidad después de una captura
+    interferenceSec: 60,         // segundos seguidos con la pantalla encendida antes de la "interferencia" (0 = desactivado)
+    interferenceLockSec: 30,     // segundos que dura el bloqueo por interferencia
+    // Bandas del radar GPS (metros). El GPS en el monte tiene 10-30 m de error: no achiques demasiado.
+    radarBands: [
+      { max: 15,       level: 4, label: '¡AQUÍ CERCA!' },
+      { max: 35,       level: 3, label: 'CALIENTE' },
+      { max: 70,       level: 2, label: 'TIBIO' },
+      { max: Infinity, level: 1, label: 'FRÍO' },
+    ],
+  },
+
+  base: { code: 'APG-B-RF7K2', name: 'Refugio (Base)' },
+
+  teams: [
+    { id: 't1', name: 'Yacarés',  color: '#ff3b30', code: 'APG-T-YK4M7' },
+    { id: 't2', name: 'Halcones', color: '#ff9500', code: 'APG-T-HL9C2' },
+    { id: 't3', name: 'Zorros',   color: '#ffd60a', code: 'APG-T-ZR3P8' },
+    { id: 't4', name: 'Búhos',    color: '#34c759', code: 'APG-T-BH6W5' },
+    { id: 't5', name: 'Jaguares', color: '#0a84ff', code: 'APG-T-JG2N9' },
+    { id: 't6', name: 'Tatús',    color: '#bf5af2', code: 'APG-T-TC7Q4' },
+  ],
+
+  // uses = cuántas veces se puede saquear en total (entre todos los equipos) antes de agotarse.
+  // lat/lng se cargan desde el panel admin con "Anclar aquí" (no hace falta escribirlas).
+  // radar:false = estación secreta, no aparece en el radar.
+  stations: [
+    { id: 's01', code: 'APG-S-W8KD3', name: 'Pozo Viejo',          resource: 'agua',     amount: 1, uses: 15 },
+    { id: 's02', code: 'APG-S-A2RX9', name: 'Arroyo Oscuro',       resource: 'agua',     amount: 2, uses: 10 },
+    { id: 's03', code: 'APG-S-T5NB4', name: 'Tanque Roto',         resource: 'agua',     amount: 3, uses: 6, radar: false },
+    { id: 's04', code: 'APG-S-G7PM2', name: 'Generador',           resource: 'energia',  amount: 1, uses: 15 },
+    { id: 's05', code: 'APG-S-E3VH8', name: 'Torre Eléctrica',     resource: 'energia',  amount: 2, uses: 10 },
+    { id: 's06', code: 'APG-S-B9QJ6', name: 'Batería Abandonada',  resource: 'energia',  amount: 3, uses: 6, radar: false },
+    { id: 's07', code: 'APG-S-M4CF7', name: 'Enfermería',          resource: 'medicina', amount: 1, uses: 15 },
+    { id: 's08', code: 'APG-S-K6LT3', name: 'Botiquín Perdido',    resource: 'medicina', amount: 2, uses: 10 },
+    { id: 's09', code: 'APG-S-C8YW5', name: 'Carpa Médica',        resource: 'medicina', amount: 3, uses: 6, radar: false },
+    { id: 's10', code: 'APG-S-N2HZ8', name: 'Antena',              resource: 'senal',    amount: 1, uses: 15 },
+    { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 10 },
+    { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 6, radar: false },
+  ],
+};

@@ -1,0 +1,263 @@
+import { GAME } from './config.js';
+import { RES, teamById, stationById, resById, findByCode, total, fmtRes, distM, cooldownMs, STATUS_TEXT } from './engine.js';
+import { startClient, serverNow } from './backend.js';
+import { openScanner, closeScanner, isScannerOpen } from './scanner.js';
+import { $, esc, ls, vibrate, netText, brandHeader, registerSW } from './ui.js';
+
+const rules = GAME.rules;
+let client = null;
+let state = null;
+let teamId = ls.get('team');
+if (teamId && !teamById[teamId]) teamId = null;
+
+$('#brand').innerHTML = brandHeader();
+registerSW();
+
+// ---------------------------------------------------------------- render
+function render() {
+  const joined = !!teamId;
+  $('#join').classList.toggle('hidden', joined);
+  $('#game').classList.toggle('hidden', !joined);
+  $('#bottomBar').classList.toggle('hidden', !joined);
+  if (!joined || !state) { $('#teamChip').textContent = ''; return; }
+
+  const t = teamById[teamId], ts = state.teams[teamId];
+  $('#teamChip').innerHTML = `<span class="dot" style="background:${t.color}"></span>${esc(t.name)}`;
+
+  const sb = $('#statusBanner');
+  sb.textContent = STATUS_TEXT[state.status];
+  sb.className = 'status-banner ' + state.status;
+
+  const load = total(ts.carry);
+  $('#carryCount').textContent = `${load}/${rules.backpackMax}`;
+  $('#carry').innerHTML = RES.map(r => `<div class="res"><div class="ic">${r.icon}</div><div class="n">${ts.carry[r.id]}</div><div class="lbl">${esc(r.name)}</div></div>`).join('');
+  $('#bank').innerHTML = RES.map(r => {
+    const goal = rules.faroGoal[r.id] || 0, have = ts.bank[r.id];
+    const pct = goal ? Math.min(100, Math.round(have / goal * 100)) : 100;
+    return `<div class="res"><div class="ic">${r.icon}</div><div class="n">${have}<span class="muted" style="font-size:.8rem">/${goal}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
+  }).join('');
+  $('#faro').innerHTML = ts.faroPos != null
+    ? `<b style="color:var(--hi)">🔥 ¡FARO ENCENDIDO! ${ts.faroPos + 1}° lugar</b> — sigan sumando recursos para más puntos.`
+    : `<span class="muted">Completen todo para encender el Faro y pedir rescate.</span>`;
+
+  $('#ranking').innerHTML = state.ranking.map((rk, i) => {
+    const tt = teamById[rk.teamId], me = rk.teamId === teamId;
+    const faro = state.teams[rk.teamId].faroPos != null ? ' 🔥' : '';
+    return `<div style="padding:4px 0;${me ? 'color:var(--hi);font-weight:800' : ''}">${i + 1}. <span class="dot" style="background:${tt.color}"></span>${esc(tt.name)}${faro} <span style="float:right">${rk.score} pts</span></div>`;
+  }).join('');
+
+  updateRadar();
+}
+
+function setNet(st) { $('#net').textContent = netText(st); }
+
+// ---------------------------------------------------------------- unirse
+function tryJoin(raw) {
+  const f = findByCode(raw);
+  if (!f || f.kind !== 'team') { $('#joinMsg').textContent = 'Ese no es un código de equipo. Pedile la tarjeta a tu monitor.'; vibrate([80, 60, 80]); return; }
+  teamId = f.item.id; ls.set('team', teamId);
+  // No mostrar mensajes viejos al entrar
+  ls.set('seenMsg', String(Date.now()));
+  ls.set('seenCapture', String(Date.now()));
+  vibrate(120);
+  render();
+}
+$('#joinScan').onclick = () => openScanner({ title: 'Tarjeta de equipo', onCode: tryJoin });
+$('#joinForm').addEventListener('submit', e => { e.preventDefault(); tryJoin($('#joinCode').value); });
+$('#leaveBtn').onclick = () => {
+  if (!confirm('¿Salir de este equipo? Los recursos quedan guardados en el equipo.')) return;
+  teamId = null; ls.del('team'); render();
+};
+
+// ---------------------------------------------------------------- escanear
+function showResult(res) {
+  $('#result').classList.toggle('bad', !res.ok);
+  $('#resultIcon').textContent = res.ok ? (res.pending ? '📶' : '✅') : '✖';
+  $('#resultText').textContent = res.text;
+  $('#result').classList.remove('hidden');
+  vibrate(res.ok ? [60, 40, 120] : [250, 80, 250]);
+  clearTimeout(showResult.t);
+  showResult.t = setTimeout(() => $('#result').classList.add('hidden'), 4500);
+}
+$('#resultOk').onclick = () => $('#result').classList.add('hidden');
+
+async function handleCode(raw) {
+  const f = findByCode(raw);
+  if (!f) return showResult({ ok: false, text: 'Código desconocido. ¿Lo escanearon bien?' });
+  if (f.kind === 'team') return showResult({ ok: false, text: f.item.id === teamId ? 'Esa es SU tarjeta de equipo. Cuídenla: las Sombras la buscan.' : `Esa es la tarjeta de ${f.item.name}. Solo las Sombras pueden usarla.` });
+  if (state.status !== 'running') return showResult({ ok: false, text: STATUS_TEXT[state.status] });
+  const res = f.kind === 'station'
+    ? await client.send('scan_station', { teamId, stationId: f.item.id })
+    : await client.send('deposit', { teamId });
+  showResult(res);
+}
+$('#scanBtn').onclick = () => {
+  if (isLocked()) return;
+  openScanner({ title: 'Escaneá una estación o el Refugio', onCode: handleCode });
+};
+
+// ---------------------------------------------------------------- SOS
+$('#sosCall').textContent = `📞 Llamar a ${GAME.coordinator.name}: ${GAME.coordinator.phone}`;
+$('#sosCall').href = 'tel:' + GAME.coordinator.phone.replace(/[^\d+]/g, '');
+$('#sosBtn').onclick = () => $('#sos').classList.remove('hidden');
+$('#sosClose').onclick = () => $('#sos').classList.add('hidden');
+
+// ---------------------------------------------------------------- avisos (mensajes y capturas)
+const alertQueue = [];
+function pushAlert(icon, title, text) {
+  alertQueue.push({ icon, title, text });
+  if ($('#alert').classList.contains('hidden')) nextAlert();
+}
+function nextAlert() {
+  const a = alertQueue.shift();
+  if (!a) { $('#alert').classList.add('hidden'); return; }
+  $('#alertIcon').textContent = a.icon; $('#alertTitle').textContent = a.title; $('#alertText').textContent = a.text;
+  $('#alert').classList.remove('hidden');
+  vibrate([200, 100, 200, 100, 400]);
+}
+$('#alertOk').onclick = nextAlert;
+
+function checkNotifications() {
+  if (!teamId || !state) return;
+  const seenMsg = +ls.get('seenMsg') || 0;
+  const fresh = state.messages.filter(m => m.ts > seenMsg && (!m.teamId || m.teamId === teamId));
+  if (fresh.length) {
+    ls.set('seenMsg', String(Math.max(...fresh.map(m => m.ts))));
+    fresh.forEach(m => pushAlert('📢', m.teamId ? 'MENSAJE PARA SU EQUIPO' : 'TRANSMISIÓN', m.text));
+  }
+  const ts = state.teams[teamId];
+  const seenCap = +ls.get('seenCapture') || 0;
+  if (ts.lastCaptureTs > seenCap) {
+    ls.set('seenCapture', String(ts.lastCaptureTs));
+    const lost = ts.lastCaptureLost && total(ts.lastCaptureLost) ? `Perdieron ${fmtRes(ts.lastCaptureLost)}.` : 'La mochila estaba vacía: no perdieron nada.';
+    pushAlert('🔦', '¡LOS ILUMINARON!', `${ts.lastCaptureBy} los atrapó. ${lost} Tienen ${Math.round(rules.captureImmunitySec / 60)} min de inmunidad.`);
+  }
+}
+
+// ---------------------------------------------------------------- interferencia (pantalla encendida mucho tiempo)
+let visibleSince = document.visibilityState === 'visible' ? Date.now() : null;
+document.addEventListener('visibilitychange', () => {
+  visibleSince = document.visibilityState === 'visible' ? Math.max(Date.now(), +ls.get('lockUntil') || 0) : null;
+});
+const isLocked = () => Date.now() < (+ls.get('lockUntil') || 0);
+
+setInterval(() => {
+  const now = Date.now(), lockUntil = +ls.get('lockUntil') || 0;
+  const meter = $('#screenMeter');
+  if (now < lockUntil) {
+    $('#lock').classList.remove('hidden');
+    $('#lockCount').textContent = Math.ceil((lockUntil - now) / 1000);
+    meter.textContent = '';
+    return;
+  }
+  $('#lock').classList.add('hidden');
+  const limit = rules.interferenceSec;
+  if (!limit || !state || state.status !== 'running' || !teamId || !visibleSince) { meter.textContent = ''; return; }
+  const secs = Math.max(0, (now - visibleSince) / 1000);
+  const left = Math.ceil(limit - secs);
+  meter.textContent = `📱 Pantalla: ${left}s antes de la interferencia`;
+  meter.classList.toggle('warn', left <= 10);
+  if (left === 10 || left === 5) vibrate(60);
+  if (secs >= limit) {
+    const until = now + rules.interferenceLockSec * 1000;
+    ls.set('lockUntil', String(until));
+    visibleSince = until;
+    closeScanner();
+    vibrate([400, 100, 400]);
+  }
+}, 500);
+
+// ---------------------------------------------------------------- radar GPS
+let watchId = null, fix = null, level = 0;
+function radarToggle() {
+  if (watchId != null) {
+    navigator.geolocation.clearWatch(watchId); watchId = null; fix = null; level = 0;
+    $('#radarBtn').textContent = 'Encender radar';
+    $('#radarLabel').textContent = 'APAGADO'; $('#radarLabel').className = 'radar-label';
+    paintRings(0);
+    return;
+  }
+  if (!('geolocation' in navigator)) { $('#radarInfo').textContent = 'Este celular no tiene GPS disponible en el navegador.'; return; }
+  unlockAudio();
+  $('#radarBtn').textContent = 'Apagar radar';
+  $('#radarLabel').textContent = 'BUSCANDO…'; $('#radarLabel').className = 'radar-label';
+  watchId = navigator.geolocation.watchPosition(
+    p => { fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, ts: Date.now() }; updateRadar(); },
+    err => { $('#radarInfo').textContent = err.code === 1 ? 'Permiso de ubicación denegado. Activalo en el navegador para usar el radar.' : 'Sin señal GPS todavía… salgan de debajo de los árboles un momento.'; },
+    { enableHighAccuracy: true, maximumAge: 3000, timeout: 25000 }
+  );
+}
+$('#radarBtn').onclick = radarToggle;
+const sonarSel = $('#sonarMode');
+sonarSel.value = ls.get('sonar') || 'vib';
+sonarSel.onchange = () => { ls.set('sonar', sonarSel.value); unlockAudio(); };
+
+function paintRings(n) { [...$('#radarRings').children].forEach((el, i) => el.classList.toggle('on', i < n)); }
+
+function updateRadar() {
+  if (watchId == null || !fix || !state || !teamId) return;
+  const now = serverNow();
+  const cands = GAME.stations.filter(def => {
+    const st = state.stations[def.id];
+    if (def.radar === false || st.lat == null || st.usesLeft <= 0) return false;
+    const last = st.lastByTeam[teamId];
+    return !(last != null && now - last < cooldownMs(def));
+  });
+  const lbl = $('#radarLabel');
+  if (!cands.length) {
+    level = 0; lbl.textContent = 'SIN SEÑALES'; lbl.className = 'radar-label l1'; paintRings(0);
+    $('#radarInfo').textContent = 'No hay estaciones detectables ahora. Las secretas no aparecen en el radar: búsquenlas con linterna.';
+    return;
+  }
+  let best = null;
+  for (const def of cands) {
+    const st = state.stations[def.id];
+    const d = distM(fix.lat, fix.lng, st.lat, st.lng);
+    if (!best || d < best.d) best = { def, d };
+  }
+  const band = rules.radarBands.find(b => best.d <= b.max) || rules.radarBands[rules.radarBands.length - 1];
+  level = band.level;
+  lbl.textContent = band.label; lbl.className = 'radar-label l' + band.level; paintRings(band.level);
+  const r = resById[best.def.resource];
+  const hint = band.level >= 3 ? `Se detecta ${r.icon} ${r.name} cerca. ` : '';
+  const acc = Math.round(fix.acc);
+  $('#radarInfo').textContent = `${hint}GPS ±${acc} m${acc > 35 ? ' · señal débil: quédense quietos unos segundos' : ''}`;
+}
+
+// Sonar: pitido o vibración más rápido cuanto más cerca
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch {}
+}
+function beep(freq) {
+  if (!audioCtx) return;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.frequency.value = freq; o.type = 'sine';
+  g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.25, audioCtx.currentTime + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.12);
+  o.connect(g).connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + 0.13);
+}
+const PERIOD = { 1: 0, 2: 2600, 3: 1300, 4: 550 };
+let lastPing = 0;
+setInterval(() => {
+  if (watchId == null || !level || document.visibilityState !== 'visible' || isLocked() || state?.status !== 'running') return;
+  const per = PERIOD[level]; if (!per) return;
+  const now = Date.now(); if (now - lastPing < per) return;
+  lastPing = now;
+  const mode = sonarSel.value;
+  if (mode === 'vib') vibrate(level >= 4 ? 90 : 50);
+  if (mode === 'sound') beep(level >= 4 ? 1320 : level === 3 ? 990 : 660);
+}, 100);
+// Revisar enfriamientos que vencen aunque no haya eventos nuevos
+setInterval(updateRadar, 5000);
+
+// ---------------------------------------------------------------- inicio
+render();
+client = await startClient({
+  onState: s => { state = s; render(); checkNotifications(); },
+  onStatus: setNet,
+});
