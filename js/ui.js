@@ -41,17 +41,24 @@ export function registerSW() {
   if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
-// Pantalla de PIN simple para admin y Sombras (protección básica, no es seguridad fuerte).
-export function pinGate(pins, key, onOk) {
+async function pinHash(pin) {
+  const data = new TextEncoder().encode('apagon:' + pin);
+  const buf = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Pantalla de PIN para admin y Sombras. Compara contra hashes: el PIN no aparece en el código.
+// (Protege de curiosos; no es seguridad fuerte.)
+export function pinGate(hashes, key, onOk) {
   if (sessionStorage.getItem(GAME.gameId + ':' + key) === 'ok') return onOk();
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `${brandHeader()}<h2>Ingresá el PIN</h2><form class="row" style="max-width:320px;width:100%"><input type="password" inputmode="numeric" autocomplete="off" placeholder="PIN"><button class="primary">Entrar</button></form><p class="muted" data-m></p>`;
   document.body.append(ov);
   const input = ov.querySelector('input'); input.focus();
-  ov.querySelector('form').addEventListener('submit', e => {
+  ov.querySelector('form').addEventListener('submit', async e => {
     e.preventDefault();
-    if (pins.includes(input.value.trim())) { sessionStorage.setItem(GAME.gameId + ':' + key, 'ok'); ov.remove(); onOk(); }
+    if (hashes.includes(await pinHash(input.value.trim()))) { sessionStorage.setItem(GAME.gameId + ':' + key, 'ok'); ov.remove(); onOk(); }
     else { ov.querySelector('[data-m]').textContent = 'PIN incorrecto'; input.value = ''; }
   });
 }

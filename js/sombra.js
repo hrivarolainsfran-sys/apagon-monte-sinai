@@ -47,6 +47,6 @@ $('#scanBtn').onclick = () => openScanner({ title: 'Escaneá la tarjeta del equi
 
 setInterval(render, 1000);
 
-pinGate([GAME.sombraPin, GAME.adminPin], 'sombra', async () => {
+pinGate([GAME.sombraPinHash, GAME.adminPinHash], 'sombra', async () => {
   client = await startClient({ onState: s => { state = s; render(); }, onStatus: st => { $('#net').textContent = netText(st); } });
 });

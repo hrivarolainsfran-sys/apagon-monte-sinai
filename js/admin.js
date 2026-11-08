@@ -152,6 +152,6 @@ $('#gpsBtn').onclick = () => {
 
 setInterval(render, 5000); // refresca inmunidades
 
-pinGate([GAME.adminPin], 'admin', async () => {
+pinGate([GAME.adminPinHash], 'admin', async () => {
   client = await startClient({ onState: s => { state = s; render(); }, onStatus: st => { $('#net').textContent = netText(st); } });
 });

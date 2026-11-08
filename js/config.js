@@ -10,9 +10,10 @@ export const GAME = {
   // logo: nombre de un archivo de imagen en la carpeta (ej. 'logo.png'); vacío = sin logo.
   brand: { name: 'Juego Nocturno', tagline: 'Campamento Monte Sinaí', logo: '' },
 
-  // PINs (¡cambialos antes del campamento!)
-  adminPin: '2026',   // panel de administración
-  sombraPin: '6666',  // modo Sombra (monitores cazadores)
+  // PINs guardados como hash SHA-256 de "apagon:<PIN>" (así no se leen en el código público).
+  // Para cambiar uno, en la Terminal de Mac:  printf 'apagon:NUEVOPIN' | shasum -a 256
+  adminPinHash: 'e188c438b68baa91d86a0a176f85802bc6b0a37f1f8efee639212770487f6c76',  // panel de administración
+  sombraPinHash: '0f40e4025c73d018ea5430a4126fd54be3c4f14b703c4f4ada88bdb9d5765a65', // modo Sombra (monitores cazadores)
 
   // Contacto que aparece al tocar el botón SOS
   coordinator: { name: 'Coordinación del campamento', phone: '+595 981 000000' },
