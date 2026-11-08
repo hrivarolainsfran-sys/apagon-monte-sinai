@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Registro de eventos del juego: cualquiera puede leer y agregar,
+    // pero nadie puede modificar ni borrar lo que ya pasó.
+    match /games/{game}/events/{eventId} {
+      allow read: if true;
+      allow create: if request.resource.data.id == eventId
+                    && request.resource.data.type is string
+                    && request.resource.data.ts is number
+                    && request.resource.data.size() < 20;
+      allow update, delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

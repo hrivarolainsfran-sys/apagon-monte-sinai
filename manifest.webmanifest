@@ -1,0 +1,12 @@
+{
+  "name": "APAGÓN · Juegos Josema y Sol",
+  "short_name": "APAGÓN",
+  "start_url": "index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d0805",
+  "theme_color": "#0d0805",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

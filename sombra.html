@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0805">
+  <title>APAGÓN · Sombra</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="top">
+    <div id="brand"></div>
+    <div class="net" id="net">…</div>
+  </div>
+  <h1 style="text-align:center;font-size:2.2rem">🌑 MODO SOMBRA</h1>
+  <div class="status-banner" id="statusBanner"></div>
+
+  <div class="card">
+    <label class="muted" for="name">Tu nombre de Sombra</label>
+    <input id="name" placeholder="Ej: Sombra Norte" maxlength="40">
+    <p class="muted" style="margin:10px 0 0">Cuando ilumines a un equipo con tu linterna, pedí la <b>tarjeta del equipo</b> (la lleva el Portador) y escaneala. Pierden la mitad de la mochila y quedan 3 min inmunes.</p>
+  </div>
+
+  <button class="primary big" id="scanBtn">🔦 ATRAPAR · ESCANEAR TARJETA</button>
+
+  <div class="card">
+    <h3>Equipos</h3>
+    <div id="teams"></div>
+  </div>
+
+  <div class="card">
+    <h3>Últimas capturas</h3>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="big-icon" id="resultIcon"></div>
+    <div class="big-text" id="resultText"></div>
+    <button class="primary" id="resultOk" style="max-width:220px">OK</button>
+  </div>
+
+  <script type="module" src="js/sombra.js"></script>
+</body>
+</html>

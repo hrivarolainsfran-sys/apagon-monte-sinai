@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>APAGÓN · Imprimir QRs</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+  <style>
+    :root { --ink: #3b1f0e; --sand: #e9b864; --brush: 'Permanent Marker', cursive; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 16px; font: 14px/1.35 system-ui, sans-serif; color: var(--ink); background: #f4ead8; }
+    .no-print { max-width: 900px; margin: 0 auto 16px; background: #fff; border: 1px solid #d8c3a0; border-radius: 12px; padding: 14px; }
+    .no-print button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--ink); color: #fff; cursor: pointer; }
+    h1, h2 { font-family: var(--brush); font-weight: 400; margin: .2em 0; }
+    h2.section { max-width: 900px; margin: 18px auto 8px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; max-width: 900px; margin: 0 auto; }
+    .card { background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 12px; text-align: center; break-inside: avoid; page-break-inside: avoid; position: relative; }
+    .card .head { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--brush); font-size: 1.35rem; }
+    .card .sub { font-size: .85rem; color: #6d4a2c; }
+    .qr { width: 100%; max-width: 230px; margin: 8px auto 4px; display: block; }
+    .qr svg { width: 100%; height: auto; display: block; }
+    .code { font: 700 1rem ui-monospace, Menlo, monospace; letter-spacing: .12em; }
+    .brandline { font-family: var(--brush); font-size: .75rem; color: #8a6440; margin-top: 4px; }
+    .brandline img { height: 18px; vertical-align: middle; border-radius: 3px; }
+    .big .qr { max-width: 340px; }
+    .big { grid-column: 1 / -1; }
+    .team { border-width: 6px; }
+    .where { border-top: 1px dashed #b99; margin-top: 8px; padding-top: 6px; font-size: .78rem; color: #7a5a3a; text-align: left; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .no-print { display: none; }
+      .grid { grid-template-columns: repeat(2, 1fr); max-width: none; }
+      h2.section { page-break-before: always; }
+      h2.section.first { page-break-before: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <h1>Imprimir códigos QR · APAGÓN</h1>
+    <p><b>Consejos para la noche:</b> imprimí en papel mate y <b>plastificá sin brillo</b> (el brillo del flash impide leer el QR). Mínimo 10 cm de lado. Poné una pulserita luminosa o cinta fosforescente <i>al lado</i> del QR para encontrarlo, no encima. Cada QR también trae un código escrito por si la cámara falla.</p>
+    <p>⚠ Las tarjetas de equipo y los códigos de estación son secretos: no los publiques. Si se filtran, cambiá los códigos en <code>js/config.js</code> y volvé a imprimir.</p>
+    <button onclick="print()">🖨 Imprimir</button>
+  </div>
+  <div id="out"></div>
+
+  <script type="module">
+    import { GAME } from './js/config.js';
+    import { resById } from './js/engine.js';
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const qrSvg = text => { const q = qrcode(0, 'H'); q.addData(text); q.make(); return q.createSvgTag({ cellSize: 8, margin: 3, scalable: true }); };
+    const b = GAME.brand || {};
+    const brand = `<div class="brandline">${b.logo ? `<img src="${esc(b.logo)}" alt="" onerror="this.remove()"> ` : ''}${esc(b.name || '')} · APAGÓN</div>`;
+    const appUrl = GAME.publicUrl || new URL('index.html', location.href).href;
+    const card = ({ title, sub = '', code, qrText = code, cls = '', style = '', extra = '' }) => `
+      <div class="card ${cls}" style="${style}">
+        <div class="head">${title}</div>
+        ${sub ? `<div class="sub">${sub}</div>` : ''}
+        <div class="qr">${qrSvg(qrText)}</div>
+        ${code ? `<div class="code">${esc(code)}</div>` : ''}
+        ${extra}
+        ${brand}
+      </div>`;
+
+    let html = `<h2 class="section first">1 · Inicio y Refugio</h2><div class="grid">`;
+    html += card({ title: '📲 ENTRÁ AL JUEGO', sub: 'Escaneá con la cámara del celular para abrir la app', code: '', qrText: appUrl, cls: 'big', extra: `<div class="sub">${esc(appUrl)}</div>` });
+    html += card({ title: '🔥 REFUGIO', sub: 'Escaneá aquí para asegurar la mochila', code: GAME.base.code, cls: 'big' });
+    html += `</div>`;
+
+    html += `<h2 class="section">2 · Estaciones de recursos</h2><div class="grid">`;
+    for (const s of GAME.stations) {
+      const r = resById[s.resource];
+      html += card({
+        title: `${r.icon} ${esc(s.name)}`,
+        sub: `${esc(r.name)} · +${s.amount} por saqueo${s.radar === false ? ' · 🕳 secreta (no sale en el radar)' : ''}`,
+        code: s.code,
+        extra: `<div class="where">Ubicación: ______________________________</div>`,
+      });
+    }
+    html += `</div>`;
+
+    html += `<h2 class="section">3 · Tarjetas de equipo (las lleva el Portador)</h2><div class="grid">`;
+    for (const t of GAME.teams) {
+      html += card({ title: esc(t.name), sub: 'Tarjeta de equipo · ¡que no la atrapen las Sombras!', code: t.code, cls: 'team', style: `border-color:${t.color}` });
+    }
+    html += `</div>`;
+    document.getElementById('out').innerHTML = html;
+  </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0805">
+  <title>APAGÓN · Juegos Josema y Sol</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="top">
+    <div id="brand"></div>
+    <div>
+      <div class="team-chip" id="teamChip"></div>
+      <div class="net" id="net">…</div>
+    </div>
+  </div>
+  <h1 style="text-align:center;font-size:2.3rem;margin-top:8px">APAGÓN</h1>
+
+  <!-- Unirse a un equipo -->
+  <section id="join" class="card hidden">
+    <h3>Unite a tu equipo</h3>
+    <p>Escaneá la <b>tarjeta de tu equipo</b> que te dio el monitor.</p>
+    <button class="primary big" id="joinScan">ESCANEAR TARJETA</button>
+    <form class="row" id="joinForm" style="margin-top:10px">
+      <input id="joinCode" placeholder="o escribí el código del equipo" autocapitalize="characters" autocomplete="off">
+      <button class="shrink">Entrar</button>
+    </form>
+    <p class="muted" id="joinMsg"></p>
+  </section>
+
+  <!-- Juego -->
+  <main id="game" class="hidden">
+    <div class="status-banner" id="statusBanner"></div>
+
+    <div class="card">
+      <h3>🎒 Mochila <span class="muted" id="carryCount"></span></h3>
+      <div class="grid4" id="carry"></div>
+      <p class="muted" style="margin:8px 0 0">Llévenla al <b>Refugio</b> y escaneen el QR de la base para asegurarla. Si una Sombra los ilumina, pierden la mitad.</p>
+    </div>
+
+    <div class="card">
+      <h3>🔥 Refugio · Faro de Rescate</h3>
+      <div class="grid4" id="bank"></div>
+      <p id="faro" style="margin:10px 0 0;text-align:center"></p>
+    </div>
+
+    <div class="card" id="radarCard">
+      <h3>📡 Radar</h3>
+      <div class="radar-label" id="radarLabel">APAGADO</div>
+      <div class="radar-rings" id="radarRings"><i></i><i></i><i></i><i></i></div>
+      <p class="muted" id="radarInfo" style="text-align:center;margin:0 0 10px">Detecta la estación activa más cercana. El GPS en el monte falla por 10–30 m: usalo para orientarte y buscá el QR con los ojos.</p>
+      <div class="row">
+        <button id="radarBtn">Encender radar</button>
+        <select id="sonarMode" class="shrink" style="width:auto">
+          <option value="off">🔇 Silencio</option>
+          <option value="vib">📳 Vibración</option>
+          <option value="sound">🔊 Sonido</option>
+        </select>
+      </div>
+      <p class="muted" style="margin:8px 0 0;font-size:.8rem">Ojo: el sonido y la luz de la pantalla pueden delatarlos ante las Sombras.</p>
+    </div>
+
+    <div class="card">
+      <h3>🏆 Posiciones</h3>
+      <div id="ranking"></div>
+    </div>
+
+    <details class="card">
+      <summary>Roles del equipo</summary>
+      <ul>
+        <li><b>Operador</b> — el único con el celular encendido. Escanea y lee el radar. No alumbra.</li>
+        <li><b>Vigías (2)</b> — sin celular. Cuidan la retaguardia y los costados, avisan si viene una Sombra.</li>
+        <li><b>Rastreador</b> — busca los QR escondidos y guía al grupo.</li>
+        <li><b>Portador</b> — lleva la <b>tarjeta del equipo</b>. Si una Sombra la escanea, pierden media mochila.</li>
+        <li><b>Capitán</b> — decide cuándo volver al Refugio y qué arriesgar.</li>
+      </ul>
+      <p class="muted">Cambien de Operador cada 20 minutos. Nadie se separa del grupo. Caminen, no corran.</p>
+    </details>
+
+    <p style="text-align:center"><button class="sm" id="leaveBtn">Cambiar de equipo</button></p>
+  </main>
+
+  <div class="bottom-bar hidden" id="bottomBar">
+    <div class="screen-meter" id="screenMeter"></div>
+    <div class="inner">
+      <button class="primary big" id="scanBtn">ESCANEAR</button>
+      <button class="danger shrink" id="sosBtn" style="font-weight:800">SOS</button>
+    </div>
+  </div>
+
+  <!-- Overlays -->
+  <div id="lock" class="overlay hidden">
+    <div class="big-icon">📵</div>
+    <h2>INTERFERENCIA</h2>
+    <p class="big-text">Demasiado tiempo con la pantalla encendida. La señal se cortó.</p>
+    <div class="countdown" id="lockCount"></div>
+    <p class="muted">Apaguen la pantalla y confíen en sus Vigías.</p>
+  </div>
+
+  <div id="result" class="overlay hidden">
+    <div class="big-icon" id="resultIcon"></div>
+    <div class="big-text" id="resultText"></div>
+    <button class="primary" id="resultOk" style="max-width:220px">OK</button>
+  </div>
+
+  <div id="alert" class="overlay hidden">
+    <div class="big-icon" id="alertIcon">📢</div>
+    <h2 id="alertTitle">MENSAJE</h2>
+    <div class="big-text" id="alertText"></div>
+    <button class="primary" id="alertOk" style="max-width:220px">Entendido</button>
+  </div>
+
+  <div id="sos" class="overlay hidden">
+    <div class="big-icon">🆘</div>
+    <h2>¿Necesitan ayuda?</h2>
+    <p class="big-text">Si alguien se lastimó o se perdieron, quédense juntos y llamen ya.</p>
+    <a id="sosCall" class="primary" style="display:block;background:var(--bad);color:#fff;padding:16px;border-radius:12px;font-weight:800;text-decoration:none;margin-bottom:10px"></a>
+    <p class="muted">También pueden ir a la luz más cercana o gritar "¡AYUDA!": los monitores responden.</p>
+    <button id="sosClose" style="max-width:220px">Cerrar</button>
+  </div>
+
+  <script type="module" src="js/player.js"></script>
+</body>
+</html>

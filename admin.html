@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d0805">
+  <title>APAGÓN · Panel</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="wide">
+  <div class="top">
+    <div id="brand"></div>
+    <div class="net" id="net">…</div>
+  </div>
+  <h1>APAGÓN · Panel de control</h1>
+
+  <div class="card">
+    <div class="row" style="flex-wrap:wrap">
+      <div class="status-banner" id="statusBanner" style="flex:2 1 260px"></div>
+      <button class="primary shrink" data-state="running">▶ Iniciar / Reanudar</button>
+      <button class="shrink" data-state="paused">⏸ Pausar</button>
+      <button class="shrink" data-state="ended">🏁 Terminar</button>
+      <button class="shrink" data-state="lobby">⏳ Volver a espera</button>
+    </div>
+  </div>
+
+  <div class="admin-grid">
+    <div>
+      <div class="card">
+        <h3>Equipos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Equipo</th><th>🎒 Mochila</th><th>🏠 Refugio</th><th>Faro</th><th>Pts</th><th>🔦</th><th></th></tr></thead>
+          <tbody id="teams"></tbody>
+        </table></div>
+      </div>
+
+      <div class="card">
+        <h3>Estaciones</h3>
+        <button id="gpsBtn">📍 Activar mi GPS para anclar</button>
+        <p class="muted" id="gpsInfo" style="margin:8px 0">Caminá hasta cada estación con el celular y tocá "Anclar aquí". Esperá a que la precisión baje de ±15 m.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Estación</th><th>Recurso</th><th>Usos</th><th>Radar</th><th>GPS</th><th>Distancia</th><th></th></tr></thead>
+          <tbody id="stations"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3>📢 Transmisión</h3>
+        <form id="msgForm">
+          <select id="msgTarget"></select>
+          <textarea id="msgText" rows="2" maxlength="280" placeholder="Ej: ¡Las Sombras salieron de cacería! Tienen 5 minutos para volver al Refugio." style="margin:8px 0"></textarea>
+          <div class="row" style="flex-wrap:wrap">
+            <button class="primary">Enviar</button>
+            <button type="button" class="shrink" data-quick="⚠ Las Sombras salieron de cacería. Cuidado.">Sombras</button>
+            <button type="button" class="shrink" data-quick="⏰ Quedan 10 minutos. Vuelvan al Refugio a asegurar todo.">10 min</button>
+            <button type="button" class="shrink" data-quick="🔁 Hora de rotar: cambien de Operador.">Rotar</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h3>Actividad</h3>
+        <div class="feed" id="feed"></div>
+      </div>
+
+      <div class="card">
+        <h3>Zona peligrosa</h3>
+        <p class="muted">Reiniciar borra mochilas, refugios y puntajes (las posiciones GPS de las estaciones se conservan).</p>
+        <button class="danger" id="resetBtn">Reiniciar partida</button>
+        <p class="muted" style="margin-top:12px">Accesos: <a href="index.html" target="_blank">App jugadores</a> · <a href="sombra.html" target="_blank">Modo Sombra</a> · <a href="imprimir.html" target="_blank">Imprimir QRs</a></p>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="adjDlg">
+    <form method="dialog" id="adjForm">
+      <h3 id="adjTitle">Ajustar</h3>
+      <select id="adjWhere"><option value="bank">🏠 Refugio</option><option value="carry">🎒 Mochila</option></select>
+      <select id="adjRes"></select>
+      <input id="adjDelta" type="number" value="1" step="1">
+      <div class="row"><button value="cancel" type="button" id="adjCancel">Cancelar</button><button class="primary" value="ok">Aplicar</button></div>
+    </form>
+  </dialog>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
