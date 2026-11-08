@@ -1,4 +1,4 @@
-# APAGÓN · Juegos Josema y Sol
+# APAGÓN · Juego Nocturno
 Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 
 ## Qué hay en la carpeta
@@ -7,10 +7,10 @@ Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 | `index.html` | Jugadores (Operador de cada equipo) | Mochila, Refugio, radar GPS, escáner QR, SOS |
 | `sombra.html` | Monitores-Sombra (PIN `6666`) | Escanean la tarjeta del equipo que iluminaron → pierde 50% de la mochila |
 | `admin.html` | Coordinación (PIN `2026`) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
-| `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 6 tarjetas de equipo |
+| `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 4 tarjetas de equipo (Rojo, Azul, Verde, Amarillo) |
 | `js/config.js` | Organización | Equipos, estaciones, recursos, reglas, PINs, teléfono SOS |
 
-Poné el logo del campamento como **`logo.png`** en esta carpeta y aparece solo en la app y en los QR.
+Para agregar un logo, poné la imagen en esta carpeta y escribí su nombre en `brand.logo` de `js/config.js`.
 
 ## Puesta en marcha (unas 2 horas, gratis)
 1. **Firebase (la base de datos en vivo)**
