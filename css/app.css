@@ -77,6 +77,15 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--hi); outlin
 .status-banner.ended { border-color: var(--good); color: var(--good); }
 @keyframes blink { 50% { opacity: .2; } }
 
+/* Eventos especiales activos */
+.specials { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 8px; }
+.specials:empty { display: none; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: .85rem; font-weight: 700; border: 1px solid var(--line2); background: var(--panel); }
+.chip.tormenta { border-color: #7fa6c8; color: #cfe3f5; background: rgba(127, 166, 200, .12); }
+.chip.suministros { border-color: var(--good); color: #d6f5dc; background: rgba(123, 216, 143, .12); }
+.chip.eclipse { border-color: var(--bad); color: #ffd7d3; background: rgba(255, 90, 78, .14); animation: blink 2s infinite; }
+.chip.timer { border-color: var(--hi); color: var(--hi); background: rgba(255, 178, 56, .1); font-variant-numeric: tabular-nums; }
+
 /* Mochila: casilleros */
 .slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 10px 0 8px; }
 .slot { aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center; font-size: 1.45rem; background: var(--panel2); border: 1px dashed var(--line2); }
