@@ -15,7 +15,7 @@ const resCells = o => RES.map(r => `${r.icon}${o[r.id]}`).join(' ');
 function render() {
   if (!state) return;
   const sb = $('#statusBanner');
-  sb.textContent = STATUS_TEXT[state.status] + (state.statusTs ? ` · desde ${hhmm(state.statusTs)}` : '');
+  sb.textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '') + (state.statusTs ? ` · desde ${hhmm(state.statusTs)}` : '');
   sb.className = 'status-banner ' + state.status;
 
   const now = serverNow();
@@ -39,7 +39,7 @@ function render() {
     const anchored = st.lat != null;
     const d = anchored && fix ? Math.round(distM(fix.lat, fix.lng, st.lat, st.lng)) + ' m' : '';
     return `<tr>
-      <td><b>${esc(def.name)}</b><br><span class="muted">${esc(def.code)}</span></td>
+      <td><b>${esc(def.name)}</b><br><span class="muted">${esc(def.code)}${def.lugar ? ' · 📍 ' + esc(def.lugar) : ''}</span></td>
       <td>${r.icon} +${def.amount}</td>
       <td>${st.usesLeft}/${def.uses}${st.usesLeft <= 0 ? ' ⛔' : ''}</td>
       <td>${def.radar === false ? '🕳 secreta' : '📡'}</td>

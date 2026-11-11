@@ -62,7 +62,7 @@ export const GAME = {
     ],
   },
 
-  base: { code: 'APG-B-RF7K2', name: 'Refugio (Base)' },
+  base: { code: 'APG-B-RF7K2', name: 'Refugio (Base)', lugar: 'La Fogata (zona segura: las Sombras no atrapan a menos de 15 m)' },
 
   teams: [
     { id: 't1', name: 'Rojo',     color: '#ff3b30', code: 'APG-T-RJ4M7' },
@@ -74,18 +74,21 @@ export const GAME = {
   // uses = cuántas veces se puede saquear en total (entre todos los equipos) antes de agotarse.
   // lat/lng se cargan desde el panel admin con "Anclar aquí" (no hace falta escribirlas).
   // radar:false = estación secreta, no aparece en el radar.
+  // lugar = dónde esconderla en el Campamento Monte Sinaí (sale impreso en la tarjeta de la estación).
+  // Cada recurso tiene una estación al norte, una al centro/sur y una secreta en el bosque,
+  // para que los equipos tengan que cruzar todo el campamento.
   stations: [
-    { id: 's01', code: 'APG-S-W8KD3', name: 'Pozo Viejo',          resource: 'agua',     amount: 1, uses: 10 },
-    { id: 's02', code: 'APG-S-A2RX9', name: 'Arroyo Oscuro',       resource: 'agua',     amount: 2, uses: 7 },
-    { id: 's03', code: 'APG-S-T5NB4', name: 'Tanque Roto',         resource: 'agua',     amount: 3, uses: 4, radar: false },
-    { id: 's04', code: 'APG-S-G7PM2', name: 'Generador',           resource: 'energia',  amount: 1, uses: 10 },
-    { id: 's05', code: 'APG-S-E3VH8', name: 'Torre Eléctrica',     resource: 'energia',  amount: 2, uses: 7 },
-    { id: 's06', code: 'APG-S-B9QJ6', name: 'Batería Abandonada',  resource: 'energia',  amount: 3, uses: 4, radar: false },
-    { id: 's07', code: 'APG-S-M4CF7', name: 'Enfermería',          resource: 'medicina', amount: 1, uses: 10 },
-    { id: 's08', code: 'APG-S-K6LT3', name: 'Botiquín Perdido',    resource: 'medicina', amount: 2, uses: 7 },
-    { id: 's09', code: 'APG-S-C8YW5', name: 'Carpa Médica',        resource: 'medicina', amount: 3, uses: 4, radar: false },
-    { id: 's10', code: 'APG-S-N2HZ8', name: 'Antena',              resource: 'senal',    amount: 1, uses: 10 },
-    { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 7 },
-    { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 4, radar: false },
+    { id: 's01', code: 'APG-S-W8KD3', name: 'Pozo Viejo',          resource: 'agua',     amount: 1, uses: 10, lugar: 'Base del Tanque de Agua' },
+    { id: 's02', code: 'APG-S-A2RX9', name: 'Arroyo Oscuro',       resource: 'agua',     amount: 2, uses: 7,  lugar: 'Pileta (cerco o máquina de bombeo)' },
+    { id: 's03', code: 'APG-S-T5NB4', name: 'Tanque Roto',         resource: 'agua',     amount: 3, uses: 4,  lugar: 'Bosque al este del Tanque, a 20–30 m del borde', radar: false },
+    { id: 's04', code: 'APG-S-G7PM2', name: 'Generador',           resource: 'energia',  amount: 1, uses: 10, lugar: 'Galpón grande junto al Tanque' },
+    { id: 's05', code: 'APG-S-E3VH8', name: 'Torre Eléctrica',     resource: 'energia',  amount: 2, uses: 7,  lugar: 'Arco sur de la Cancha de Fútbol' },
+    { id: 's06', code: 'APG-S-B9QJ6', name: 'Batería Abandonada',  resource: 'energia',  amount: 3, uses: 4,  lugar: 'Bosque oeste, detrás de las cabañas del norte', radar: false },
+    { id: 's07', code: 'APG-S-M4CF7', name: 'Enfermería',          resource: 'medicina', amount: 1, uses: 10, lugar: 'Cabañas del centro (la más grande)' },
+    { id: 's08', code: 'APG-S-K6LT3', name: 'Botiquín Perdido',    resource: 'medicina', amount: 2, uses: 7,  lugar: 'Cancha de Vóley (poste de la red)' },
+    { id: 's09', code: 'APG-S-C8YW5', name: 'Carpa Médica',        resource: 'medicina', amount: 3, uses: 4,  lugar: 'Borde del bosque sudoeste, cabaña aislada', radar: false },
+    { id: 's10', code: 'APG-S-N2HZ8', name: 'Antena',              resource: 'senal',    amount: 1, uses: 10, lugar: 'Camino central, entre cabañas y Cancha de Vóley' },
+    { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 7,  lugar: 'Entrada / camino sur del campamento' },
+    { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 4,  lugar: 'Cabañas del sudeste, junto al bosque', radar: false },
   ],
 };

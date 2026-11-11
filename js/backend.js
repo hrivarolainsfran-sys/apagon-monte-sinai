@@ -45,7 +45,9 @@ export async function startClient({ onState, onStatus }) {
   };
 
   let be;
-  if (GAME.firebase && GAME.firebase.apiKey) {
+  // ?demo en la dirección = modo práctica: no toca la partida real (datos solo en este dispositivo).
+  const forceDemo = new URLSearchParams(location.search).has('demo');
+  if (GAME.firebase && GAME.firebase.apiKey && !forceDemo) {
     try { be = await firebaseBackend(handle, onStatus); }
     catch (err) {
       console.error(err);

@@ -14,7 +14,7 @@ $('#name').onchange = () => ls.set('sombraName', $('#name').value.trim());
 
 function render() {
   if (!state) return;
-  $('#statusBanner').textContent = STATUS_TEXT[state.status];
+  $('#statusBanner').textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '');
   $('#statusBanner').className = 'status-banner ' + state.status;
   const now = serverNow();
   $('#teams').innerHTML = GAME.teams.map(t => {

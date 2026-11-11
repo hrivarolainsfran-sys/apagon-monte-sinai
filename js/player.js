@@ -19,31 +19,54 @@ function render() {
   $('#join').classList.toggle('hidden', joined);
   $('#game').classList.toggle('hidden', !joined);
   $('#bottomBar').classList.toggle('hidden', !joined);
-  if (!joined || !state) { $('#teamChip').textContent = ''; return; }
+  if (!joined || !state) { $('#teamChip').textContent = ''; document.documentElement.style.removeProperty('--team'); return; }
 
   const t = teamById[teamId], ts = state.teams[teamId];
-  $('#teamChip').innerHTML = `<span class="dot" style="background:${t.color}"></span>${esc(t.name)}`;
+  document.documentElement.style.setProperty('--team', t.color);
+  $('#teamChip').textContent = 'EQUIPO ' + t.name.toUpperCase();
 
   const sb = $('#statusBanner');
-  sb.textContent = STATUS_TEXT[state.status];
+  sb.textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '');
   sb.className = 'status-banner ' + state.status;
 
+  // Mochila: un casillero por lugar disponible
   const load = total(ts.carry);
-  $('#carryCount').textContent = `${load}/${rules.backpackMax}`;
-  $('#carry').innerHTML = RES.map(r => `<div class="res"><div class="ic">${r.icon}</div><div class="n">${ts.carry[r.id]}</div><div class="lbl">${esc(r.name)}</div></div>`).join('');
-  $('#bank').innerHTML = RES.map(r => {
-    const goal = rules.faroGoal[r.id] || 0, have = ts.bank[r.id];
-    const pct = goal ? Math.min(100, Math.round(have / goal * 100)) : 100;
-    return `<div class="res"><div class="ic">${r.icon}</div><div class="n">${have}<span class="muted" style="font-size:.8rem">/${goal}</span></div><div class="bar"><i style="width:${pct}%"></i></div></div>`;
-  }).join('');
-  $('#faro').innerHTML = ts.faroPos != null
-    ? `<b style="color:var(--hi)">🔥 ¡FARO ENCENDIDO! ${ts.faroPos + 1}° lugar</b> — sigan sumando recursos para más puntos.`
-    : `<span class="muted">Completen todo para encender el Faro y pedir rescate.</span>`;
+  $('#carryCount').textContent = `${load} / ${rules.backpackMax}`;
+  const items = RES.flatMap(r => Array(ts.carry[r.id]).fill(r.icon));
+  const slots = Array.from({ length: rules.backpackMax }, (_, i) => items[i]
+    ? `<div class="slot full">${items[i]}</div>` : `<div class="slot"></div>`);
+  const prevLoad = render.prevLoad ?? load;
+  $('#carry').innerHTML = slots.join('');
+  // sólo animar los casilleros nuevos
+  [...$('#carry').children].forEach((el, i) => { if (i < prevLoad) el.style.animation = 'none'; });
+  render.prevLoad = load;
+  $('#carryLegend').innerHTML = RES.map(r => `<span>${r.icon} ${esc(r.name)}</span>`).join('');
 
+  // Refugio / Faro
+  let have = 0, need = 0;
+  $('#bank').innerHTML = RES.map(r => {
+    const goal = rules.faroGoal[r.id] || 0, n = ts.bank[r.id];
+    have += Math.min(n, goal); need += goal;
+    const pct = goal ? Math.min(100, Math.round(n / goal * 100)) : 100;
+    return `<div class="bank-row${n >= goal ? ' done' : ''}"><span>${r.icon}</span><div class="bar"><i style="width:${pct}%"></i></div><span class="ct"><b>${n}</b>/${goal}</span></div>`;
+  }).join('');
+  const p = need ? have / need : 0;
+  $('#flame').style.setProperty('--p', p.toFixed(3));
+  $('#flame').classList.toggle('lit', ts.faroPos != null);
+  $('#faroPct').textContent = ts.faroPos != null ? '¡ENCENDIDO!' : Math.round(p * 100) + '%';
+  $('#faro').innerHTML = ts.faroPos != null
+    ? `<b>${ts.faroPos + 1}° equipo en encender el Faro.</b> Sigan juntando recursos: cada uno suma puntos.`
+    : `Completen <b>${Object.values(rules.faroGoal)[0]} de cada recurso</b> en el Refugio para encender el Faro y pedir rescate.`;
+
+  // Posiciones con barra relativa
+  const max = Math.max(1, ...state.ranking.map(r => r.score));
   $('#ranking').innerHTML = state.ranking.map((rk, i) => {
     const tt = teamById[rk.teamId], me = rk.teamId === teamId;
     const faro = state.teams[rk.teamId].faroPos != null ? ' 🔥' : '';
-    return `<div style="padding:4px 0;${me ? 'color:var(--hi);font-weight:800' : ''}">${i + 1}. <span class="dot" style="background:${tt.color}"></span>${esc(tt.name)}${faro} <span style="float:right">${rk.score} pts</span></div>`;
+    return `<div class="rank-row${me ? ' me' : ''}"><span class="pos">${i + 1}</span>
+      <div class="nm"><span><span class="dot" style="background:${tt.color};color:${tt.color}"></span>${esc(tt.name)}${faro}</span>
+      <div class="meter"><i style="width:${Math.round(rk.score / max * 100)}%;background:${tt.color}"></i></div></div>
+      <span class="pts">${rk.score}</span></div>`;
   }).join('');
 
   updateRadar();
@@ -72,6 +95,7 @@ $('#leaveBtn').onclick = () => {
 // ---------------------------------------------------------------- escanear
 function showResult(res) {
   $('#result').classList.toggle('bad', !res.ok);
+  $('#result').classList.toggle('ok', !!res.ok);
   $('#resultIcon').textContent = res.ok ? (res.pending ? '📶' : '✅') : '✖';
   $('#resultText').textContent = res.text;
   $('#result').classList.remove('hidden');
@@ -155,7 +179,7 @@ setInterval(() => {
   if (!limit || !state || state.status !== 'running' || !teamId || !visibleSince) { meter.textContent = ''; return; }
   const secs = Math.max(0, (now - visibleSince) / 1000);
   const left = Math.ceil(limit - secs);
-  meter.textContent = `📱 Pantalla: ${left}s antes de la interferencia`;
+  meter.innerHTML = `<span>📱 Pantalla</span><span class="track"><i style="width:${Math.max(0, Math.min(100, left / limit * 100))}%"></i></span><span>${left}s</span>`;
   meter.classList.toggle('warn', left <= 10);
   if (left === 10 || left === 5) vibrate(60);
   if (secs >= limit) {
@@ -172,14 +196,14 @@ let watchId = null, fix = null, level = 0;
 function radarToggle() {
   if (watchId != null) {
     navigator.geolocation.clearWatch(watchId); watchId = null; fix = null; level = 0;
-    $('#radarBtn').textContent = 'Encender radar';
+    $('#radarBtn').textContent = 'Encender radar'; $('#radar').dataset.on = '0';
     $('#radarLabel').textContent = 'APAGADO'; $('#radarLabel').className = 'radar-label';
     paintRings(0);
     return;
   }
   if (!('geolocation' in navigator)) { $('#radarInfo').textContent = 'Este celular no tiene GPS disponible en el navegador.'; return; }
   unlockAudio();
-  $('#radarBtn').textContent = 'Apagar radar';
+  $('#radarBtn').textContent = 'Apagar radar'; $('#radar').dataset.on = '1';
   $('#radarLabel').textContent = 'BUSCANDO…'; $('#radarLabel').className = 'radar-label';
   watchId = navigator.geolocation.watchPosition(
     p => { fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, ts: Date.now() }; updateRadar(); },
@@ -192,7 +216,7 @@ const sonarSel = $('#sonarMode');
 sonarSel.value = ls.get('sonar') || 'vib';
 sonarSel.onchange = () => { ls.set('sonar', sonarSel.value); unlockAudio(); };
 
-function paintRings(n) { [...$('#radarRings').children].forEach((el, i) => el.classList.toggle('on', i < n)); }
+function paintRings(n) { $('#radar').dataset.level = String(n); }
 
 function updateRadar() {
   if (watchId == null || !fix || !state || !teamId) return;
