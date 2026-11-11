@@ -1,7 +1,7 @@
 // Service worker: guarda la app en el celular para que abra aunque la señal sea mala.
-const CACHE = 'apagon-v11';
+const CACHE = 'apagon-v12';
 const CORE = [
-  './', 'index.html', 'admin.html', 'sombra.html', 'imprimir.html', 'pantalla.html', 'js/pantalla.js', 'mision.html', 'js/mision.js',
+  './', 'index.html', 'admin.html', 'sombra.html', 'imprimir.html', 'pantalla.html', 'js/pantalla.js', 'mision.html', 'js/mision.js', 'checklist.html', 'js/checklist.js',
   'css/app.css', 'js/config.js', 'js/engine.js', 'js/backend.js', 'js/ui.js', 'js/scanner.js',
   'js/player.js', 'js/admin.js', 'js/sombra.js', 'manifest.webmanifest', 'icon.svg',
   'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js',

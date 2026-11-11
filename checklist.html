@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05070b">
+  <title>APAGÓN · Checklist del ensayo</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body { padding-bottom: 40px; }
+    .progress { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 10px 0; }
+    .progress .bar { height: 10px; }
+    .phase h2 { font-size: 1.3rem; margin: 0 0 4px; }
+    .phase .when { color: var(--dim); font-size: .85rem; margin-bottom: 8px; }
+    .item { display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .item:last-child { border-bottom: 0; }
+    .item input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--hi); cursor: pointer; }
+    .item b { display: block; }
+    .item span { color: var(--dim); font-size: .88rem; }
+    .item.done b { text-decoration: line-through; color: var(--dim); }
+    .item a { color: var(--hi); }
+    .who { display: inline-block; font-size: .72rem; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line2); color: var(--dim); margin-left: 6px; vertical-align: middle; }
+    .warn-box { border-color: var(--bad); background: rgba(255, 90, 78, .08); }
+    .tests { display: grid; gap: 8px; }
+    .test { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel2); }
+    .test .st { font-size: .85rem; color: var(--dim); }
+    .test .st.ok { color: var(--good); }
+    .test .st.bad { color: var(--bad); }
+    .plan td, .plan th { white-space: normal; }
+    @media print {
+      :root { --bg: #fff; --panel: #fff; --panel2: #fff; --text: #111; --dim: #555; --line: #ccc; --line2: #bbb; --hi: #b35c00; }
+      body { background: #fff !important; color: #111; max-width: none; }
+      .no-print, .progress { display: none !important; }
+      .card { break-inside: avoid; border-color: #bbb; }
+      h1, h2, h3 { color: #111; }
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div id="brand"></div>
+    <div class="no-print"><button class="sm" onclick="print()">🖨 Imprimir</button></div>
+  </div>
+  <h1 style="font-size:1.9rem;margin-top:8px">CHECKLIST DEL ENSAYO</h1>
+  <p class="muted">Tocá cada ítem para tacharlo. Lo que marcás queda guardado en este celular.</p>
+
+  <div class="progress no-print">
+    <div class="row"><span id="pct" class="shrink" style="font-family:var(--display);color:var(--hi)">0%</span><div class="bar"><i id="pctBar" style="width:0%"></i></div></div>
+  </div>
+
+  <div class="card warn-box" id="warnings"></div>
+
+  <div class="card no-print" id="selftest">
+    <h3>📱 Probar este celular</h3>
+    <p class="muted" style="margin:0 0 10px;font-size:.85rem">Que cada Operador, Sombra y monitor lo haga con su propio celular, de noche y en el lugar. No toca la partida.</p>
+    <div class="tests">
+      <div class="test"><div><b>📷 Cámara y QR</b><div class="st" id="tCam">Escaneá cualquier QR del juego</div></div><button class="sm" id="bCam">Probar</button></div>
+      <div class="test"><div><b>📍 GPS</b><div class="st" id="tGps">Precisión ideal: menos de ±20 m</div></div><button class="sm" id="bGps">Probar</button></div>
+      <div class="test"><div><b>📶 Conexión al juego</b><div class="st" id="tNet">Se conecta a la partida en vivo</div></div><button class="sm" id="bNet">Probar</button></div>
+      <div class="test"><div><b>📳 Vibración</b><div class="st" id="tVib">En iPhone no vibra (es normal)</div></div><button class="sm" id="bVib">Probar</button></div>
+      <div class="test"><div><b>🔊 Voz</b><div class="st" id="tVoz">Lee una frase en voz alta</div></div><button class="sm" id="bVoz">Probar</button></div>
+      <div class="test"><div><b>🔋 Batería</b><div class="st" id="tBat">Ideal: más de 70% al empezar</div></div><button class="sm" id="bBat">Ver</button></div>
+    </div>
+  </div>
+
+  <div id="phases"></div>
+
+  <script type="module" src="js/checklist.js"></script>
+</body>
+</html>
