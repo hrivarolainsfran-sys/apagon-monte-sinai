@@ -49,6 +49,33 @@
 
     <div>
       <div class="card">
+        <h3>⚡ Eventos especiales</h3>
+        <div id="activeSpecials" class="muted" style="margin-bottom:10px">Ningún evento activo.</div>
+        <div class="row" style="margin-bottom:10px">
+          <label class="muted shrink" for="spMin">Duración</label>
+          <select id="spMin" class="shrink" style="width:auto"><option value="3">3 min</option><option value="5" selected>5 min</option><option value="8">8 min</option><option value="10">10 min</option></select>
+        </div>
+        <div style="display:grid;gap:8px">
+          <button data-sp="tormenta">⛈ <b>Tormenta</b> — el radar deja de funcionar</button>
+          <div class="row">
+            <select id="spStation"></select>
+            <button class="shrink" data-sp="suministros">📦 <b>Suministros x2</b></button>
+          </div>
+          <button data-sp="eclipse">🌑 <b>Eclipse</b> — si los atrapan, pierden TODA la mochila</button>
+        </div>
+        <hr style="border:0;border-top:1px solid var(--line);margin:14px 0">
+        <div class="row" style="flex-wrap:wrap">
+          <span class="muted shrink">⏰ Cuenta regresiva final:</span>
+          <button class="shrink" data-cd="5">5 min</button>
+          <button class="shrink" data-cd="10">10 min</button>
+          <button class="shrink" data-cd="15">15 min</button>
+          <button class="shrink sm" data-cd="0">Cancelar</button>
+        </div>
+        <p class="muted" id="cdInfo" style="margin:8px 0 0"></p>
+        <p class="muted" style="margin:8px 0 0;font-size:.8rem">Cada evento avisa a todos los celulares y sale en la Pantalla de la Fogata. Cuando la cuenta regresiva llega a cero, el juego termina solo.</p>
+      </div>
+
+      <div class="card">
         <h3>📢 Transmisión</h3>
         <form id="msgForm">
           <select id="msgTarget"></select>

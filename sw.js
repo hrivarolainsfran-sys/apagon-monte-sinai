@@ -1,5 +1,5 @@
 // Service worker: guarda la app en el celular para que abra aunque la señal sea mala.
-const CACHE = 'apagon-v7';
+const CACHE = 'apagon-v8';
 const CORE = [
   './', 'index.html', 'admin.html', 'sombra.html', 'imprimir.html', 'pantalla.html', 'js/pantalla.js',
   'css/app.css', 'js/config.js', 'js/engine.js', 'js/backend.js', 'js/ui.js', 'js/scanner.js',

@@ -57,13 +57,18 @@
     .announce.faro .t1 { color: var(--hi); text-shadow: 0 0 .4em rgba(255, 178, 56, .6); }
     .announce.capture { background: radial-gradient(circle at 50% 50%, rgba(255, 90, 78, .3), rgba(3, 5, 8, .94) 60%); }
     .announce.capture .t1 { color: var(--bad); }
+    .tv-head .chip { font-size: 1em; }
+    .tv-clock .cd { color: var(--hi); }
+    .tv-clock .cd.hot { color: var(--bad); animation: blink 1s infinite; }
+    .announce.special { background: radial-gradient(circle at 50% 50%, rgba(127, 166, 200, .3), rgba(3, 5, 8, .94) 60%); }
+    .announce.special .t1 { color: #cfe3f5; }
     .announce.msg .t1 { font-size: 4vw; color: var(--text); font-family: system-ui, sans-serif; font-weight: 800; letter-spacing: 0; }
   </style>
 </head>
 <body class="tv">
   <header class="tv-head">
     <div class="tv-title">APAGÓN<small id="brandLine"></small></div>
-    <div class="status-banner" id="statusBanner">…</div>
+    <div style="display:grid;justify-items:center;gap:.8vh"><div class="status-banner" id="statusBanner">…</div><div class="specials" id="specials" style="margin:0"></div></div>
     <div class="tv-clock"><span id="clock">--:--</span><small id="elapsed"></small></div>
   </header>
 

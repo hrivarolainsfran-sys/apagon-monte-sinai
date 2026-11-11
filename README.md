@@ -27,6 +27,17 @@ Para agregar un logo, poné la imagen en esta carpeta y escribí su nombre en `b
 5. **Al atardecer, anclá las estaciones**: andá con un celular a cada QR escondido, abrí `admin.html` → *Activar mi GPS* → esperá ±15 m → *Anclar aquí*. Las estaciones "secretas" no aparecen en el radar.
 6. **Prueba general de noche** con 2 o 3 celulares baratos (Android + iPhone): escanear, capturar, depositar, ver el ranking.
 
+## Eventos especiales (desde el panel de coordinación)
+| Evento | Qué pasa | Cuándo usarlo |
+|---|---|---|
+| ⛈ **Tormenta** | El radar deja de funcionar | Cuando los equipos dependen demasiado del celular |
+| 📦 **Lluvia de suministros** | Una estación elegida da el DOBLE y se anuncia dónde está | Para mover a todos hacia una zona y generar choques |
+| 🌑 **Eclipse** | Si una Sombra los ilumina, pierden TODA la mochila | Momento de máxima tensión, 5 min |
+| ⏰ **Cuenta regresiva** | Reloj visible en todos los celulares y en la Fogata; en cero el juego termina solo | Los últimos 10–15 minutos |
+
+Todos avisan a los celulares y salen en grande en la Pantalla de la Fogata. Se pueden terminar antes con "Terminar".
+Para practicar sin tocar la partida real, agregá `?demo` al final de cualquier dirección.
+
 ## Cómo se juega (para explicar a los chicos)
 - Juntan 💧 Agua, ⚡ Energía, ✚ Medicina y 📡 Señal escaneando estaciones escondidas.
 - La mochila aguanta **6**. Hay que volver al **Refugio** y escanear su QR para asegurar lo que llevan.
