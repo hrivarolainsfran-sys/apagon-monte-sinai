@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, CHESTS, CHEST_EFFECTS } from './engine.js';
+import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, CHESTS, CHEST_EFFECTS, MISSIONS, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { $, esc, hhmm, netText, toast, brandHeader, pinGate, registerSW } from './ui.js';
 
@@ -54,6 +54,11 @@ function render() {
       <td><button class="sm" data-anchor="${def.id}" ${fix ? '' : 'disabled'}>📍 Anclar aquí</button></td>
     </tr>`;
   }).join('');
+
+  $('#missionsHead').innerHTML = `<tr><th>Misión</th><th>Premio</th>${GAME.teams.map(t => `<th><span class="dot" style="background:${t.color}"></span>${esc(t.name)}</th>`).join('')}</tr>`;
+  $('#missions').innerHTML = MISSIONS.map(m => `<tr><td>${m.icon} <b>${esc(m.name)}</b><br><span class="muted">📍 ${esc(m.lugar)}</span></td><td>${esc(rewardText(m.reward))}</td>
+    ${GAME.teams.map(t => `<td>${state.teams[t.id].missions[m.id] ? '✅ ' + hhmm(state.teams[t.id].missions[m.id]).slice(0, 5) : '—'}</td>`).join('')}</tr>`).join('')
+    || '<tr><td class="muted">No hay misiones configuradas.</td></tr>';
 
   $('#chests').innerHTML = CHESTS.map(c => {
     const st = state.chests[c.id], e = CHEST_EFFECTS[c.effect] || { icon: '?', name: c.effect };

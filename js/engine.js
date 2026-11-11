@@ -9,6 +9,9 @@ export const teamById = Object.fromEntries(GAME.teams.map(t => [t.id, t]));
 export const stationById = Object.fromEntries(GAME.stations.map(s => [s.id, s]));
 export const CHESTS = GAME.chests || [];
 export const chestById = Object.fromEntries(CHESTS.map(c => [c.id, c]));
+export const MISSIONS = GAME.missions || [];
+export const missionById = Object.fromEntries(MISSIONS.map(m => [m.id, m]));
+export const rewardText = rw => rw?.type === 'puntos' ? `+${rw.amount} pts` : rw ? `+${rw.amount} ${resById[rw.resource]?.icon || ''} al Refugio` : '';
 // Descripción de cada efecto de cofre (para el panel y los avisos)
 export const CHEST_EFFECTS = {
   refugio: { icon: '🎁', name: 'Envío al Refugio' },
@@ -85,7 +88,7 @@ export function reduce(events) {
     .sort((a, b) => (a.ts - b.ts) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length, specials: [], endsAt: null };
-  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0, bonusPts: 0, shieldUntil: 0 };
+  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0, bonusPts: 0, shieldUntil: 0, missions: {} };
   s.chests = Object.fromEntries(CHESTS.map(c => [c.id, { openedBy: null, ts: null }]));
   for (const st of GAME.stations) s.stations[st.id] = { usesLeft: st.uses, lastByTeam: {}, lat: st.lat ?? null, lng: st.lng ?? null, acc: null, anchoredTs: null };
 
@@ -246,6 +249,20 @@ function apply(s, e, rules) {
         default: txt = 'El cofre estaba vacío.'; pub = `${tname} abrió un cofre vacío`;
       }
       return ok(txt, pub, { chest: def.effect }, { kind: 'chest', effect: def.effect, chestId: def.id, ...extra });
+    }
+    case 'mission_done': {
+      if (!team) return no('Equipo desconocido.');
+      const m = missionById[e.missionId];
+      if (!m) return no('Misión desconocida.');
+      if (!running()) return;
+      if (team.missions[m.id]) return no(`${tname} ya completó "${m.name}". Cada misión vale una sola vez.`);
+      team.missions[m.id] = e.ts;
+      const rw = m.reward || {};
+      let lit = '';
+      if (rw.type === 'puntos') team.bonusPts += rw.amount || 0;
+      else if (resById[rw.resource]) { team.bank[rw.resource] += rw.amount || 0; lit = checkFaro(); }
+      const txt = `💪 ${tname} completó "${m.name}": ${rewardText(rw)}${lit}`;
+      return ok(txt, txt, {}, { kind: 'mission', missionId: m.id, faroPos: lit ? team.faroPos : null });
     }
     case 'special': {
       if (!SPECIALS[e.kind]) return no('Evento especial desconocido.');

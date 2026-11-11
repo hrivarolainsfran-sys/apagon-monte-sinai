@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { RES, teamById, stationById, resById, findByCode, total, fmtRes, fmtSec, distM, cooldownMs, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, isActive, specialText, lugarCorto } from './engine.js';
+import { RES, teamById, stationById, resById, findByCode, total, fmtRes, fmtSec, distM, cooldownMs, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, isActive, specialText, lugarCorto, MISSIONS, missionById, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { openScanner, closeScanner, isScannerOpen } from './scanner.js';
 import { $, esc, ls, vibrate, netText, brandHeader, registerSW } from './ui.js';
@@ -56,6 +56,16 @@ function render() {
     ? `<b>${ts.faroPos + 1}° equipo en encender el Faro.</b> Sigan juntando recursos: cada uno suma puntos.`
     : `Completen <b>${Object.values(rules.faroGoal)[0]} de cada recurso</b> en el Refugio para encender el Faro y pedir rescate.`;
 
+  // Misiones
+  const doneCount = MISSIONS.filter(m => ts.missions[m.id]).length;
+  $('#missionCount').textContent = `${doneCount} / ${MISSIONS.length}`;
+  $('#missions').innerHTML = MISSIONS.map(m => {
+    const done = ts.missions[m.id];
+    return `<div class="mission-row${done ? ' done' : ''}"><span class="ic">${m.icon}</span>
+      <div class="nm"><b>${esc(m.name)}</b><span>📍 ${esc(m.lugar)}</span></div>
+      <span class="rw">${done ? '✅ hecha' : esc(rewardText(m.reward))}</span></div>`;
+  }).join('');
+
   // Posiciones con barra relativa
   const max = Math.max(1, ...state.ranking.map(r => r.score));
   $('#ranking').innerHTML = state.ranking.map((rk, i) => {
@@ -100,6 +110,7 @@ function tryJoin(raw) {
   ls.set('seenMsg', String(Date.now()));
   ls.set('seenCapture', String(Date.now()));
   ls.set('seenSpecial', String(serverNow()));
+  ls.set('seenMission', String(serverNow()));
   vibrate(120);
   render();
 }
@@ -186,6 +197,18 @@ function checkNotifications() {
       if (f.kind === 'countdown') { pushAlert('⏰', 'CUENTA REGRESIVA', `¡Quedan ${f.minutes} minutos! Cuando llegue a cero, lo que no esté en el Refugio se pierde.`); continue; }
       const d = SPECIALS[f.special], x = state.specials.find(y => y.id === f.specialId);
       pushAlert(d.icon, d.name.toUpperCase(), (x ? specialText(x).replace(/^\S+ [^:]+: /, '') : d.desc).replace(/([^.!])$/, '$1.') + ` Dura ${f.minutes} minutos.`);
+    }
+  }
+
+  // Misiones completadas (las registra el monitor desde su celular)
+  if (ls.get('seenMission') == null) ls.set('seenMission', String(serverNow()));
+  const seenMi = +ls.get('seenMission');
+  const mi = state.feed.filter(f => f.kind === 'mission' && f.teamId === teamId && f.ts > seenMi).reverse();
+  if (mi.length) {
+    ls.set('seenMission', String(Math.max(...mi.map(f => f.ts))));
+    for (const f of mi) {
+      const m = missionById[f.missionId];
+      pushAlert('💪', '¡MISIÓN CUMPLIDA!', `"${m?.name || ''}": ${rewardText(m?.reward)}.` + (f.faroPos != null ? ' 🔥 ¡Y encendieron el Faro!' : ''));
     }
   }
 

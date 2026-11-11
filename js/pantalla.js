@@ -2,7 +2,7 @@
 // Solo lee datos: nunca escribe en la partida. No muestra nombres de estaciones
 // (para no regalar ubicaciones a los equipos que están en el Refugio).
 import { GAME } from './config.js';
-import { RES, teamById, stationById, total, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, lugarCorto } from './engine.js';
+import { RES, teamById, stationById, total, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, lugarCorto, missionById, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { $, esc, netText, registerSW } from './ui.js';
 
@@ -97,6 +97,7 @@ function tickerText(f) {
     case 'message': return f.toTeam ? '' : `📢 ${esc(f.msg)}`;
     case 'special': { const d = SPECIALS[f.special]; const st = f.stationId && stationById[f.stationId]; return d ? `${d.icon} ${d.name}${st ? ' en ' + esc(lugarCorto(st)) : ''}` : ''; }
     case 'chest': return { refugio: `🎁 ${tn(f.teamId)} abrió un cofre: +${f.amount} ${RES.find(r => r.id === f.resource)?.icon || ''}`, puntos: `⭐ ${tn(f.teamId)} encontró un tesoro (+${f.amount} pts)`, escudo: `🛡 ${tn(f.teamId)} consiguió un escudo`, mapa: `📜 ${tn(f.teamId)} encontró un mapa del tesoro`, trampa: `💥 ${tn(f.teamId)} cayó en una trampa` }[f.effect] || '';
+    case 'mission': { const m = missionById[f.missionId]; return m ? `💪 ${tn(f.teamId)} superó "${esc(m.name)}" (${esc(rewardText(m.reward))})` : ''; }
     case 'countdown': return f.minutes ? `⏰ ¡Quedan ${f.minutes} minutos!` : '';
     case 'state': return { running: '▶ El Apagón está en marcha', paused: '⏸ Pausa', ended: '🏁 Fin del juego', lobby: '⏳ En espera' }[f.status];
     default: return '';
@@ -157,6 +158,10 @@ function collectAnnouncements() {
       }[f.effect];
       if (a) queue.push(a);
       if (f.faroPos != null) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${n} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
+    } else if (f.kind === 'mission') {
+      const m = missionById[f.missionId];
+      if (m) queue.push({ cls: 'faro', ic: m.icon, t1: `¡${t.name.toUpperCase()} SUPERÓ LA MISIÓN!`, t2: `"${m.name}" · ${rewardText(m.reward)}`, sound: 'faro' });
+      if (f.faroPos != null) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${t.name.toUpperCase()} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
     } else if (f.kind === 'countdown' && f.minutes > 0) {
       queue.push({ cls: 'faro', ic: '⏰', t1: `¡QUEDAN ${f.minutes} MINUTOS!`, t2: 'Lo que no esté en el Refugio cuando llegue a cero, se pierde', sound: 'faro' });
     } else if (f.kind === 'state' && (f.status === 'running' || f.status === 'ended')) {

@@ -105,4 +105,36 @@ export const GAME = {
     { id: 'c5', code: 'APG-C-4W4WY', effect: 'refugio', resource: 'senal', amount: 3,    lugar: 'Cabaña más lejana del sudeste' },
     { id: 'c6', code: 'APG-C-EQK4N', effect: 'puntos', amount: 40,                      lugar: 'Borde del bosque oeste, junto al camino' },
   ],
+
+  // Misiones de grupo: puestos atendidos por un monitor (página mision.html).
+  // El equipo hace el reto; si lo logra, el monitor escanea su tarjeta y reciben la recompensa.
+  // Cada equipo puede completar cada misión una sola vez.
+  // reward: { type: 'refugio', resource, amount }  → recursos directo al Refugio
+  //         { type: 'puntos', amount }             → puntos extra
+  missions: [
+    { id: 'm1', icon: '🔦', name: 'Guía en la oscuridad', lugar: 'Cancha de Fútbol (centro)', tiempo: '3 min',
+      reward: { type: 'refugio', resource: 'energia', amount: 2 },
+      reto: 'Todo el equipo con los ojos vendados, menos el Guía. El Guía, SIN tocarlos y solo con la voz, los lleva por un recorrido de 6 conos y de vuelta. Si alguien toca un cono, vuelve al inicio.',
+      materiales: '6 conos o botellas, vendas para los ojos' },
+    { id: 'm2', icon: '📡', name: 'Mensaje en Morse', lugar: 'Cancha de Vóley', tiempo: '3 min',
+      reward: { type: 'refugio', resource: 'senal', amount: 2 },
+      reto: 'El monitor transmite con la linterna una palabra corta en Morse (ej. LUZ, FARO, SOS, AGUA). El equipo tiene una tabla Morse impresa y debe descifrarla antes de que se acabe el tiempo. Se puede repetir la transmisión 2 veces.',
+      materiales: 'Linterna, tabla Morse impresa (una por equipo), lista de palabras' },
+    { id: 'm3', icon: '💧', name: 'Cadena de agua', lugar: 'Pileta', tiempo: '2 min',
+      reward: { type: 'refugio', resource: 'agua', amount: 2 },
+      reto: 'En fila, pasando un vaso de mano en mano (sin caminar con el vaso), llenar una botella hasta la marca. El primero carga en el balde; el último vuelca en la botella.',
+      materiales: 'Balde con agua, 1 vaso por equipo, botella de 2 L con una marca' },
+    { id: 'm4', icon: '✚', name: 'Triaje de emergencia', lugar: 'Cabañas del centro (Enfermería)', tiempo: '2 min',
+      reward: { type: 'refugio', resource: 'medicina', amount: 2 },
+      reto: 'Uno del equipo hace de "herido". Los demás le arman un cabestrillo en el brazo y un vendaje en la cabeza, y lo trasladan sentado en una "silla de manos" 10 pasos. El monitor revisa que todo esté firme.',
+      materiales: '2 vendas o pañuelos triangulares, cinta' },
+    { id: 'm5', icon: '🧠', name: 'Memoria del Apagón', lugar: 'Cerca de la Fogata (a 20 m, en lo oscuro)', tiempo: '1 min',
+      reward: { type: 'puntos', amount: 30 },
+      reto: 'El monitor ilumina 10 objetos durante 20 segundos y después los tapa. El equipo tiene 1 minuto para nombrar al menos 8. Cambiar algún objeto entre equipo y equipo.',
+      materiales: '12–15 objetos chicos, una tela para taparlos, linterna' },
+    { id: 'm6', icon: '⭕', name: 'Aro sin soltarse', lugar: 'Galpón junto al Tanque de Agua', tiempo: '1 min',
+      reward: { type: 'puntos', amount: 30 },
+      reto: 'Todo el equipo en ronda, tomados de las manos. Tienen que pasar un aro por todos los cuerpos y que vuelva al inicio SIN soltarse las manos, en menos de 60 segundos.',
+      materiales: 'Un aro (hula-hula), cronómetro' },
+  ],
 };
