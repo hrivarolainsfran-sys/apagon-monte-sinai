@@ -118,9 +118,19 @@ $('#bNet').onclick = async () => {
       const anchored = GAME.stations.filter(x => s.stations[x.id].lat != null).length;
       showWarnings(anchored < GAME.stations.length ? [`📍 Estaciones con GPS anclado: ${anchored} de ${GAME.stations.length}. Anclalas desde el panel durante el ensayo.`] : []);
     },
-    onStatus: s => st('#tNet', netText(s) + (s.online && !s.error ? ` · ${Math.round(performance.now() - t0)} ms` : ''), s.error ? 'bad' : s.online ? 'ok' : ''),
+    onStatus: s => { lastNet = s; showNet(); },
   });
+  clearInterval(netTimer); netTimer = setInterval(showNet, 2000);
+  function showNet() {
+    const s = lastNet || {};
+    if (s.error) { clearInterval(netTimer); return st('#tNet', netText(s), 'bad'); }
+    if (s.mode === 'demo') return st('#tNet', netText(s));
+    if (s.online) { clearInterval(netTimer); return st('#tNet', `✅ En línea · respondió en ${((performance.now() - t0) / 1000).toFixed(1)} s`, 'ok'); }
+    const secs = (performance.now() - t0) / 1000;
+    st('#tNet', secs < 30 ? 'Conectando… (si pasa de 30 s, en este lugar no hay señal)' : '○ Sin señal acá: la app guarda y envía cuando vuelva', secs < 30 ? '' : 'bad');
+  }
 };
+let lastNet = null, netTimer = null;
 
 $('#bVib').onclick = () => { vibrate([120, 80, 120]); st('#tVib', navigator.vibrate ? '¿Vibró? Si no, revisá el modo silencio' : 'Este celular no vibra desde la web (iPhone): usen sonido', navigator.vibrate ? '' : 'bad'); };
 $('#bVoz').onclick = async () => {
