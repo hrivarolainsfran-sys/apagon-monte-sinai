@@ -110,6 +110,16 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--hi); outlin
 .faro-msg { margin: 10px 0 0; font-size: .85rem; color: var(--dim); }
 .faro-msg b { color: var(--hi); }
 
+/* Misiones */
+.mission-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.mission-row:last-child { border-bottom: 0; }
+.mission-row .ic { font-size: 1.3rem; text-align: center; }
+.mission-row .nm b { display: block; }
+.mission-row .nm span { color: var(--dim); font-size: .8rem; }
+.mission-row .rw { font-size: .8rem; color: var(--hi); text-align: right; white-space: nowrap; }
+.mission-row.done { opacity: .6; }
+.mission-row.done .rw { color: var(--good); }
+
 /* Radar */
 .radar { position: relative; width: min(240px, 70vw); margin: 4px auto 6px; aspect-ratio: 1; }
 .radar svg { width: 100%; height: 100%; display: block; }
