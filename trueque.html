@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#05070b">
+  <title>APAGÓN · Trueque</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .pick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
+    .pick button { padding: 10px 4px; font-weight: 700; }
+    .pick button.on { background: var(--c); color: #05070b; border-color: var(--c); }
+    .step { display: grid; grid-template-columns: 30px 1fr auto 40px 40px 40px; gap: 6px; align-items: center; margin: 6px 0; }
+    .step .n { text-align: center; font-family: var(--display); font-size: 1.2rem; color: var(--hi); }
+    .step button { padding: 6px 0; }
+    .side h3 { margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div id="brand"></div>
+    <div class="net" id="net">…</div>
+  </div>
+  <h1 style="text-align:center;font-size:2rem">🤝 TRUEQUE EN EL REFUGIO</h1>
+  <div class="status-banner" id="statusBanner"></div>
+  <p class="muted" style="text-align:center;font-size:.85rem">Los dos Capitanes tienen que estar presentes. Se intercambian recursos que ya están en el Refugio.</p>
+
+  <div class="card side" id="sideA"></div>
+  <div style="text-align:center;font-size:1.6rem;margin:-4px 0">⇅</div>
+  <div class="card side" id="sideB"></div>
+
+  <div class="card" id="summary" style="text-align:center"></div>
+  <button class="primary big" id="confirmBtn" disabled>✅ CONFIRMAR TRUEQUE</button>
+
+  <div id="result" class="overlay hidden">
+    <div class="big-icon" id="resultIcon"></div>
+    <div class="big-text" id="resultText"></div>
+    <button class="primary" id="resultOk" style="max-width:220px">OK</button>
+  </div>
+
+  <script type="module" src="js/trueque.js"></script>
+</body>
+</html>

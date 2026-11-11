@@ -9,6 +9,7 @@ Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 | `admin.html` | Coordinación (PIN de admin) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
 | `pantalla.html` | Proyector o TV en la Fogata | Ranking en vivo, fuego de cada equipo y anuncios grandes (capturas, Faros, mensajes). Solo lee: no hace falta PIN |
 | `mision.html` | Monitores de cada puesto de misión (PIN de Sombra) | Muestra el reto; si el equipo lo logra, escanean su tarjeta y reciben el premio |
+| `trueque.html` | Monitor de la Fogata (PIN de Sombra) | Registra trueques de recursos del Refugio entre dos equipos |
 | `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 4 tarjetas de equipo (Rojo, Azul, Verde, Amarillo) |
 | `js/config.js` | Organización | Equipos, estaciones, recursos, reglas, PINs, teléfono SOS |
 
@@ -71,6 +72,15 @@ Se cambian en `missions` de `js/config.js`.
 Con todos reunidos en la Fogata: en la pantalla tocá **🔇 Activar sonido**, y desde el panel tocá **🎬 Reproducir la intro** (≈ 70 s, con voz, ambiente y el título APAGÓN al final). Después, **▶ Iniciar**.
 La pantalla también tiene un botón **🎬 Ver intro** para ensayar. Los chicos pueden releer la historia en su celular ("📜 La historia del Apagón").
 El texto se cambia en `intro` de `js/config.js`. Para usar tu propia voz grabada, subí el audio a la carpeta y poné su nombre en `intro.audio`.
+
+## Seguridad: mapa en vivo
+Mientras el juego está en marcha, el celular de cada Operador envía su ubicación cada minuto, **cifrada**: solo el panel de coordinación (con el PIN de admin) puede leerla. El panel muestra un mapa con el Refugio, las estaciones y los equipos, y avisa si un equipo sale de la zona (250 m del Refugio), si deja de reportar o si tiene poca batería. Cada equipo tiene un enlace "Abrir en Google Maps".
+⚠ La clave de cifrado está atada al PIN de admin: si cambiás ese PIN, hay que regenerarla.
+
+## Trueque, bengala y premiación
+- 🤝 **Trueque**: en la Fogata, con los dos Capitanes presentes, el monitor registra el intercambio en `trueque.html` (solo recursos del Refugio).
+- 🎆 **Cofre Bengala (C7)**: encandila el radar del equipo que va primero (o del segundo, si lo abre el primero) por 5 minutos.
+- 🏆 **Premiación**: panel → "Premiación en la Fogata". Menciones (primer Faro, más misiones, más saqueos, mejores negociadores, los más valientes, mejor Sombra), podio y la reflexión de cierre (`cierre` en `js/config.js`), que queda en pantalla hasta tocar "Cerrar".
 
 ## Cómo se juega (para explicar a los chicos)
 - Juntan 💧 Agua, ⚡ Energía, ✚ Medicina y 📡 Señal escaneando estaciones escondidas.

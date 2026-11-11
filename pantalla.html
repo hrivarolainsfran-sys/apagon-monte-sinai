@@ -72,6 +72,25 @@
     .intro .title { font-family: var(--display); font-size: 13vw; color: var(--hi); letter-spacing: .08em; opacity: 0; transform: scale(1.15); transition: opacity .4s, transform 2.5s ease-out; text-shadow: 0 0 4vw rgba(255, 140, 40, .7); }
     .intro .title.on { opacity: 1; transform: scale(1); }
     .intro .skip { position: absolute; top: 3vh; right: 3vw; font-size: .9em; opacity: .35; }
+    .cer { position: fixed; inset: 0; z-index: 70; display: grid; place-items: center; text-align: center; cursor: none;
+      background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(255, 122, 31, .22), transparent 70%), #030406; }
+    .cer .stage { width: 86vw; }
+    .cer .fade { animation: fade .8s ease-out; }
+    .cer .kicker { font-size: 1.6vw; letter-spacing: .3em; text-transform: uppercase; color: var(--dim); }
+    .cer .big { font-family: var(--display); font-size: 7vw; color: var(--hi); letter-spacing: .05em; line-height: 1.05; text-shadow: 0 0 .4em rgba(255, 178, 56, .5); }
+    .cer .award .ic { font-size: 8vw; line-height: 1; animation: pop .6s cubic-bezier(.2, .9, .3, 1.4); }
+    .cer .award .name { font-family: var(--display); font-size: 6vw; margin: 1vh 0; }
+    .cer .award .why { font-size: 2vw; color: var(--text); }
+    .podium { display: flex; align-items: flex-end; justify-content: center; gap: 2vw; height: 62vh; }
+    .podium .col { width: 18vw; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; opacity: 0; transform: translateY(4vh); transition: opacity .8s, transform .8s; }
+    .podium .col.on { opacity: 1; transform: none; }
+    .podium .tn { font-family: var(--display); font-size: 2.6vw; margin-bottom: .6vh; }
+    .podium .pts { font-size: 1.6vw; color: var(--text); margin-bottom: 1vh; }
+    .podium .block { width: 100%; border-radius: 1vw 1vw 0 0; display: grid; place-items: start center; padding-top: 1.5vh; font-family: var(--display); font-size: 5vw; color: #05070b; }
+    .cer .refl .t { font-family: var(--display); font-size: 4vw; color: var(--hi); margin-bottom: 3vh; }
+    .cer .refl .x { font-size: 2.4vw; line-height: 1.5; color: #e9edf2; max-width: 70vw; margin: 0 auto; }
+    .cer .refl .c { font-size: 2vw; color: var(--hi); margin-top: 4vh; font-style: italic; }
+    .cer .close { position: absolute; top: 3vh; right: 3vw; opacity: .35; }
     .announce.msg .t1 { font-size: 4vw; color: var(--text); font-family: system-ui, sans-serif; font-weight: 800; letter-spacing: 0; }
   </style>
 </head>
@@ -90,6 +109,7 @@
     <button class="sm" id="soundBtn">🔇 Activar sonido</button>
     <button class="sm" id="fsBtn">⛶ Pantalla completa</button>
     <button class="sm" id="introBtn">🎬 Ver intro</button>
+    <button class="sm" id="ceremonyBtn">🏆 Ver premiación</button>
     <span class="net muted" id="net" style="align-self:center"></span>
   </div>
 

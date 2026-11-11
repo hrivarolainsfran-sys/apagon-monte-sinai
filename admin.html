@@ -37,8 +37,19 @@
       </div>
 
       <div class="card">
+        <h3>🗺 Mapa en vivo de los equipos <span class="muted" id="mapInfo"></span></h3>
+        <div id="mapAlerts"></div>
+        <div style="background:var(--panel2);border:1px solid var(--line);border-radius:12px;overflow:hidden">
+          <svg id="map" viewBox="0 0 600 420" style="width:100%;display:block"></svg>
+        </div>
+        <div id="mapTeams" style="margin-top:8px"></div>
+        <p class="muted" style="font-size:.8rem;margin:8px 0 0">El celular de cada Operador envía su ubicación cada minuto mientras el juego está en marcha (solo la ven los coordinadores). Para que el mapa tenga referencia, anclá el Refugio y las estaciones.</p>
+      </div>
+
+      <div class="card">
         <h3>Estaciones</h3>
         <button id="gpsBtn">📍 Activar mi GPS para anclar</button>
+        <button id="anchorBase" disabled>🔥 Anclar el Refugio (Fogata) aquí</button>
         <p class="muted" id="gpsInfo" style="margin:8px 0">Caminá hasta cada estación con el celular y tocá "Anclar aquí". Esperá a que la precisión baje de ±15 m.</p>
         <div class="table-wrap"><table>
           <thead><tr><th>Estación</th><th>Recurso</th><th>Usos</th><th>Radar</th><th>GPS</th><th>Distancia</th><th></th></tr></thead>
@@ -68,7 +79,10 @@
     <div>
       <div class="card">
         <h3>⚡ Eventos especiales</h3>
-        <button class="primary" id="introSend" style="width:100%;margin-bottom:12px">🎬 Reproducir la intro en la Fogata (≈ 70 s)</button>
+        <div class="row" style="margin-bottom:12px">
+          <button class="primary" id="introSend">🎬 Intro en la Fogata</button>
+          <button class="primary" id="ceremonySend">🏆 Premiación en la Fogata</button>
+        </div>
         <div id="activeSpecials" class="muted" style="margin-bottom:10px">Ningún evento activo.</div>
         <div class="row" style="margin-bottom:10px">
           <label class="muted shrink" for="spMin">Duración</label>
@@ -117,7 +131,7 @@
         <h3>Zona peligrosa</h3>
         <p class="muted">Reiniciar borra mochilas, refugios y puntajes (las posiciones GPS de las estaciones se conservan).</p>
         <button class="danger" id="resetBtn">Reiniciar partida</button>
-        <p class="muted" style="margin-top:12px">Accesos: <a href="index.html" target="_blank">App jugadores</a> · <a href="sombra.html" target="_blank">Modo Sombra</a> · <a href="pantalla.html" target="_blank">Pantalla de la Fogata</a> · <a href="mision.html" target="_blank">Puesto de misión</a> · <a href="checklist.html" target="_blank">Checklist del ensayo</a> · <a href="imprimir.html" target="_blank">Imprimir QRs</a></p>
+        <p class="muted" style="margin-top:12px">Accesos: <a href="index.html" target="_blank">App jugadores</a> · <a href="sombra.html" target="_blank">Modo Sombra</a> · <a href="pantalla.html" target="_blank">Pantalla de la Fogata</a> · <a href="mision.html" target="_blank">Puesto de misión</a> · <a href="trueque.html" target="_blank">Trueque</a> · <a href="checklist.html" target="_blank">Checklist del ensayo</a> · <a href="imprimir.html" target="_blank">Imprimir QRs</a></p>
       </div>
     </div>
   </div>

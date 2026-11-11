@@ -11,6 +11,17 @@ service cloud.firestore {
                     && request.resource.data.size() < 20;
       allow update, delete: if false;
     }
+    // Ubicación de cada equipo: un documento por equipo, CIFRADO
+    // (solo el panel con el PIN de admin puede leer las coordenadas).
+    match /games/{game}/presence/{teamId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.keys().hasOnly(['teamId', 'enc', 'ts'])
+                            && request.resource.data.teamId == teamId
+                            && request.resource.data.enc is string
+                            && request.resource.data.enc.size() < 1000
+                            && request.resource.data.ts is number;
+      allow delete: if false;
+    }
     match /{document=**} {
       allow read, write: if false;
     }
