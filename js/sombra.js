@@ -22,7 +22,7 @@ function render() {
     const ts = state.teams[t.id];
     const immLeft = rules.captureImmunitySec * 1000 - (now - ts.lastCaptureTs);
     return `<div style="padding:5px 0;border-bottom:1px solid var(--line)"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b>
-      <span style="float:right">${immLeft > 0 ? `🛡 inmune ${fmtSec(immLeft / 1000)}` : `🎒 ${total(ts.carry)} recursos`}</span></div>`;
+      <span style="float:right">${ts.shieldUntil > now ? `🛡 escudo ${fmtSec((ts.shieldUntil - now) / 1000)}` : immLeft > 0 ? `🛡 inmune ${fmtSec(immLeft / 1000)}` : `🎒 ${total(ts.carry)} recursos`}</span></div>`;
   }).join('');
   const caps = state.feed.filter(f => f.text.startsWith('🔦')).slice(0, 30);
   $('#feed').innerHTML = caps.map(f => `<div><time>${hhmm(f.ts)}</time>${esc(f.text)}</div>`).join('') || '<p class="muted">Nadie atrapado todavía.</p>';

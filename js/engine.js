@@ -7,6 +7,16 @@ export const RES = GAME.resources;
 export const resById = Object.fromEntries(RES.map(r => [r.id, r]));
 export const teamById = Object.fromEntries(GAME.teams.map(t => [t.id, t]));
 export const stationById = Object.fromEntries(GAME.stations.map(s => [s.id, s]));
+export const CHESTS = GAME.chests || [];
+export const chestById = Object.fromEntries(CHESTS.map(c => [c.id, c]));
+// Descripción de cada efecto de cofre (para el panel y los avisos)
+export const CHEST_EFFECTS = {
+  refugio: { icon: '🎁', name: 'Envío al Refugio' },
+  puntos:  { icon: '⭐', name: 'Puntos extra' },
+  escudo:  { icon: '🛡', name: 'Escudo' },
+  mapa:    { icon: '📜', name: 'Mapa del tesoro' },
+  trampa:  { icon: '💥', name: 'Trampa' },
+};
 
 export const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 
@@ -15,6 +25,8 @@ export function findByCode(raw) {
   if (!c) return null;
   const st = GAME.stations.find(s => normCode(s.code) === c);
   if (st) return { kind: 'station', item: st };
+  const ch = CHESTS.find(x => normCode(x.code) === c);
+  if (ch) return { kind: 'chest', item: ch };
   const tm = GAME.teams.find(t => normCode(t.code) === c);
   if (tm) return { kind: 'team', item: tm };
   if (normCode(GAME.base.code) === c) return { kind: 'base', item: GAME.base };
@@ -73,7 +85,8 @@ export function reduce(events) {
     .sort((a, b) => (a.ts - b.ts) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length, specials: [], endsAt: null };
-  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0 };
+  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0, bonusPts: 0, shieldUntil: 0 };
+  s.chests = Object.fromEntries(CHESTS.map(c => [c.id, { openedBy: null, ts: null }]));
   for (const st of GAME.stations) s.stations[st.id] = { usesLeft: st.uses, lastByTeam: {}, lat: st.lat ?? null, lng: st.lng ?? null, acc: null, anchoredTs: null };
 
   // Las posiciones GPS de las estaciones sobreviven a un reinicio.
@@ -89,7 +102,7 @@ export function reduce(events) {
 
   for (const t of GAME.teams) {
     const ts = s.teams[t.id];
-    ts.score = RES.reduce((a, r) => a + ts.bank[r.id] * r.points, 0) + (ts.faroPos != null ? (rules.faroBonus[ts.faroPos] || 0) : 0);
+    ts.score = RES.reduce((a, r) => a + ts.bank[r.id] * r.points, 0) + (ts.faroPos != null ? (rules.faroBonus[ts.faroPos] || 0) : 0) + ts.bonusPts;
   }
   s.ranking = GAME.teams.map(t => ({ teamId: t.id, score: s.teams[t.id].score })).sort((a, b) => b.score - a.score);
   s.feed.reverse(); // más reciente primero
@@ -158,6 +171,7 @@ function apply(s, e, rules) {
     case 'capture': {
       if (!team) return no('Equipo desconocido.');
       if (!running()) return;
+      if (team.shieldUntil > e.ts) return no(`${tname} tiene un 🛡 escudo de un cofre (${fmtSec((team.shieldUntil - e.ts) / 1000)}).`);
       const since = e.ts - team.lastCaptureTs, imm = rules.captureImmunitySec * 1000;
       if (since < imm) return no(`${tname} todavía tiene inmunidad (${fmtSec((imm - since) / 1000)}).`);
       const eclipse = isActive(s, 'eclipse', e.ts);
@@ -182,6 +196,56 @@ function apply(s, e, rules) {
       if (!text) return no('Mensaje vacío.');
       s.messages.push({ id: e.id, ts: e.ts, text, teamId: e.teamId || null });
       return ok('Mensaje enviado', `📢 ${e.teamId ? `(a ${tname}) ` : ''}${text}`, {}, { kind: 'message', msg: text, toTeam: e.teamId || null });
+    }
+    case 'open_chest': {
+      if (!team) return no('Equipo desconocido.');
+      const def = chestById[e.chestId], ch = s.chests[e.chestId];
+      if (!def) return no('Cofre desconocido.');
+      if (!running()) return;
+      if (ch.openedBy) return no(`Este cofre ya fue abierto por ${teamById[ch.openedBy]?.name || 'otro equipo'}. Llegaron tarde…`);
+      ch.openedBy = e.teamId; ch.ts = e.ts;
+      let txt = '', pub = '', extra = {};
+      switch (def.effect) {
+        case 'refugio': {
+          const r = resById[def.resource]; const n = def.amount || 2;
+          team.bank[r.id] += n;
+          const lit = checkFaro();
+          txt = `🎁 ¡Envío de emergencia! +${n} ${r.icon} ${r.name} directo al Refugio (ya está a salvo).${lit}`;
+          pub = `🎁 ${tname} abrió un cofre: +${n} ${r.icon} al Refugio`;
+          extra = { resource: r.id, amount: n, faroPos: lit ? team.faroPos : null };
+          break;
+        }
+        case 'puntos': {
+          const n = def.amount || 30; team.bonusPts += n;
+          txt = `⭐ ¡Tesoro! +${n} puntos para el equipo.`; pub = `⭐ ${tname} abrió un cofre: +${n} puntos`; extra = { amount: n };
+          break;
+        }
+        case 'escudo': {
+          const m = def.amount || 5; team.shieldUntil = e.ts + m * 60000;
+          txt = `🛡 ¡Escudo! Durante ${m} minutos las Sombras no los pueden atrapar.`; pub = `🛡 ${tname} consiguió un escudo de ${m} min`; extra = { amount: m };
+          break;
+        }
+        case 'mapa': {
+          // revela la estación secreta con más usos restantes
+          const secret = GAME.stations.filter(x => x.radar === false && s.stations[x.id].usesLeft > 0)
+            .sort((a, b) => s.stations[b.id].usesLeft - s.stations[a.id].usesLeft)[0];
+          if (secret) {
+            const r = resById[secret.resource];
+            txt = `📜 ¡Mapa del tesoro! Hay una estación secreta de ${r.icon} ${r.name} (+${secret.amount}) en: ${secret.lugar || secret.name}.`;
+          } else txt = '📜 Un mapa viejo… todas las estaciones secretas ya están agotadas.';
+          pub = `📜 ${tname} encontró un mapa del tesoro`;
+          break;
+        }
+        case 'trampa': {
+          const lost = zero();
+          for (const r of RES) { lost[r.id] = Math.ceil(team.carry[r.id] / 2); team.carry[r.id] -= lost[r.id]; }
+          txt = total(lost) ? `💥 ¡EMBOSCADA! Era una trampa: pierden ${fmtRes(lost)}.` : '💥 ¡EMBOSCADA! Era una trampa… por suerte la mochila estaba vacía.';
+          pub = `💥 ${tname} cayó en una trampa`; extra = { lost };
+          break;
+        }
+        default: txt = 'El cofre estaba vacío.'; pub = `${tname} abrió un cofre vacío`;
+      }
+      return ok(txt, pub, { chest: def.effect }, { kind: 'chest', effect: def.effect, chestId: def.id, ...extra });
     }
     case 'special': {
       if (!SPECIALS[e.kind]) return no('Evento especial desconocido.');

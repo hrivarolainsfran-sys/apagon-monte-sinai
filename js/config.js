@@ -91,4 +91,18 @@ export const GAME = {
     { id: 's11', code: 'APG-S-R5DU4', name: 'Radio del Guardia',   resource: 'senal',    amount: 2, uses: 7,  lugar: 'Entrada / camino sur del campamento' },
     { id: 's12', code: 'APG-S-V3XE9', name: 'Colina del Eco',      resource: 'senal',    amount: 3, uses: 4,  lugar: 'Cabañas del sudeste, junto al bosque', radar: false },
   ],
+
+  // Cofres sorpresa: QR de un solo uso. El PRIMER equipo que lo escanea se queda con el contenido.
+  // El contenido no se imprime en la tarjeta: es sorpresa (los monitores lo ven en el panel).
+  // effect: 'refugio' (+amount de un recurso directo al Refugio) · 'puntos' (+amount puntos)
+  //         'escudo' (inmune a las Sombras por amount minutos) · 'mapa' (revela una estación secreta)
+  //         'trampa' (¡emboscada! pierden la mitad de la mochila)
+  chests: [
+    { id: 'c1', code: 'APG-C-YTYZ8', effect: 'refugio', resource: 'medicina', amount: 3, lugar: 'Detrás de la Fogata, en lo oscuro (a unos 30 m)' },
+    { id: 'c2', code: 'APG-C-7VQ6W', effect: 'trampa',                                 lugar: 'Pileta, debajo de una reposera o en una esquina' },
+    { id: 'c3', code: 'APG-C-ZE52P', effect: 'escudo', amount: 5,                       lugar: 'Arco norte de la Cancha de Fútbol' },
+    { id: 'c4', code: 'APG-C-Y8ME5', effect: 'mapa',                                   lugar: 'Galpón detrás del Tanque de Agua' },
+    { id: 'c5', code: 'APG-C-4W4WY', effect: 'refugio', resource: 'senal', amount: 3,    lugar: 'Cabaña más lejana del sudeste' },
+    { id: 'c6', code: 'APG-C-EQK4N', effect: 'puntos', amount: 40,                      lugar: 'Borde del bosque oeste, junto al camino' },
+  ],
 };

@@ -82,6 +82,8 @@ function renderLive() {
     const extra = x.kind === 'suministros' ? ': ' + esc(lugarCorto(stationById[x.stationId])) + ' x2' : '';
     return `<span class="chip ${x.kind}">${d.icon} ${esc(d.name)}${extra} · ${left}</span>`;
   });
+  const shield = state.teams[teamId].shieldUntil - now;
+  if (shield > 0) chips.unshift(`<span class="chip suministros">🛡 Escudo · ${fmtSec(shield / 1000)}</span>`);
   if (status === 'running' && state.endsAt) chips.unshift(`<span class="chip timer">⏰ Quedan ${fmtSec((state.endsAt - now) / 1000)}</span>`);
   $('#specials').innerHTML = chips.join('');
 }
@@ -127,6 +129,14 @@ async function handleCode(raw) {
   if (f.kind === 'team') return showResult({ ok: false, text: f.item.id === teamId ? 'Esa es SU tarjeta de equipo. Cuídenla: las Sombras la buscan.' : `Esa es la tarjeta de ${f.item.name}. Solo las Sombras pueden usarla.` });
   const status = effectiveStatus(state, serverNow());
   if (status !== 'running') return showResult({ ok: false, text: state.endsAt && status === 'ended' ? '¡Se acabó el tiempo! Vuelvan a la Fogata.' : STATUS_TEXT[status] });
+  if (f.kind === 'chest') {
+    const res = await client.send('open_chest', { teamId, chestId: f.item.id });
+    if (!res.ok || res.pending) return showResult(res);
+    const icon = { refugio: '🎁', puntos: '⭐', escudo: '🛡', mapa: '📜', trampa: '💥' }[res.chest] || '🎁';
+    const title = res.chest === 'trampa' ? '¡EMBOSCADA!' : '¡COFRE ABIERTO!';
+    pushAlert(icon, title, res.text.replace(/^\S+\s/, ''));
+    return;
+  }
   const res = f.kind === 'station'
     ? await client.send('scan_station', { teamId, stationId: f.item.id })
     : await client.send('deposit', { teamId });

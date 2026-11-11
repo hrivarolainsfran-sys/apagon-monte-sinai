@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus } from './engine.js';
+import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, CHESTS, CHEST_EFFECTS } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { $, esc, hhmm, netText, toast, brandHeader, pinGate, registerSW } from './ui.js';
 
@@ -54,6 +54,15 @@ function render() {
       <td><button class="sm" data-anchor="${def.id}" ${fix ? '' : 'disabled'}>📍 Anclar aquí</button></td>
     </tr>`;
   }).join('');
+
+  $('#chests').innerHTML = CHESTS.map(c => {
+    const st = state.chests[c.id], e = CHEST_EFFECTS[c.effect] || { icon: '?', name: c.effect };
+    const det = c.effect === 'refugio' ? ` +${c.amount} ${resById[c.resource]?.icon || ''}` : c.effect === 'puntos' ? ` +${c.amount} pts` : c.effect === 'escudo' ? ` ${c.amount} min` : '';
+    const who = st.openedBy ? teamById[st.openedBy] : null;
+    return `<tr><td><b>${esc(c.id.toUpperCase())}</b><br><span class="muted">${esc(c.code)}</span></td><td>${e.icon} ${esc(e.name)}${det}</td>
+      <td class="muted" style="white-space:normal">${esc(c.lugar || '')}</td>
+      <td>${who ? `<span class="dot" style="background:${who.color}"></span>${esc(who.name)} · ${hhmm(st.ts)}` : '🔒 cerrado'}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">No hay cofres configurados.</td></tr>';
 
   const feedKey = state.feed.length + ':' + (state.feed[0]?.id || '');
   if (feedKey !== render.feedKey) render.feedKey = feedKey, $('#feed').innerHTML = state.feed.slice(0, 120).map(f => {

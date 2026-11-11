@@ -96,6 +96,7 @@ function tickerText(f) {
     case 'capture': return `🔦 Las Sombras iluminaron a ${tn(f.teamId)}${total(f.lost || {}) ? ` (−${total(f.lost)})` : ''}`;
     case 'message': return f.toTeam ? '' : `📢 ${esc(f.msg)}`;
     case 'special': { const d = SPECIALS[f.special]; const st = f.stationId && stationById[f.stationId]; return d ? `${d.icon} ${d.name}${st ? ' en ' + esc(lugarCorto(st)) : ''}` : ''; }
+    case 'chest': return { refugio: `🎁 ${tn(f.teamId)} abrió un cofre: +${f.amount} ${RES.find(r => r.id === f.resource)?.icon || ''}`, puntos: `⭐ ${tn(f.teamId)} encontró un tesoro (+${f.amount} pts)`, escudo: `🛡 ${tn(f.teamId)} consiguió un escudo`, mapa: `📜 ${tn(f.teamId)} encontró un mapa del tesoro`, trampa: `💥 ${tn(f.teamId)} cayó en una trampa` }[f.effect] || '';
     case 'countdown': return f.minutes ? `⏰ ¡Quedan ${f.minutes} minutos!` : '';
     case 'state': return { running: '▶ El Apagón está en marcha', paused: '⏸ Pausa', ended: '🏁 Fin del juego', lobby: '⏳ En espera' }[f.status];
     default: return '';
@@ -145,6 +146,17 @@ function collectAnnouncements() {
       const d = SPECIALS[f.special], st = f.stationId && stationById[f.stationId];
       queue.push({ cls: f.special === 'eclipse' ? 'capture' : f.special === 'suministros' ? 'faro' : 'special', ic: d.icon, t1: '¡' + d.name.toUpperCase() + '!',
         t2: (st ? `${lugarCorto(st)} da el DOBLE de recursos` : d.desc) + ` · ${f.minutes} min`, sound: f.special === 'eclipse' ? 'capture' : 'msg' });
+    } else if (f.kind === 'chest') {
+      const n = t.name.toUpperCase();
+      const a = {
+        refugio: { cls: 'faro', ic: '🎁', t1: `¡${n} ABRIÓ UN COFRE!`, t2: `Envío de emergencia: +${f.amount} ${RES.find(r => r.id === f.resource)?.icon || ''} directo al Refugio`, sound: 'faro' },
+        puntos:  { cls: 'faro', ic: '⭐', t1: `¡${n} ENCONTRÓ UN TESORO!`, t2: `+${f.amount} puntos`, sound: 'faro' },
+        escudo:  { cls: 'special', ic: '🛡', t1: `¡${n} TIENE ESCUDO!`, t2: `Las Sombras no los pueden atrapar por ${f.amount} minutos`, sound: 'msg' },
+        mapa:    { cls: 'special', ic: '📜', t1: `¡${n} ENCONTRÓ UN MAPA!`, t2: 'Ahora saben dónde hay una estación secreta…', sound: 'msg' },
+        trampa:  { cls: 'capture', ic: '💥', t1: `¡${n} CAYÓ EN UNA TRAMPA!`, t2: f.lost && total(f.lost) ? `Pierde ${resTxt(f.lost)} de la mochila` : 'Por suerte tenía la mochila vacía', sound: 'capture', shake: f.teamId },
+      }[f.effect];
+      if (a) queue.push(a);
+      if (f.faroPos != null) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${n} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
     } else if (f.kind === 'countdown' && f.minutes > 0) {
       queue.push({ cls: 'faro', ic: '⏰', t1: `¡QUEDAN ${f.minutes} MINUTOS!`, t2: 'Lo que no esté en el Refugio cuando llegue a cero, se pierde', sound: 'faro' });
     } else if (f.kind === 'state' && (f.status === 'running' || f.status === 'ended')) {
