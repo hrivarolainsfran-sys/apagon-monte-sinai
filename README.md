@@ -7,6 +7,7 @@ Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 | `index.html` | Jugadores (Operador de cada equipo) | Mochila, Refugio, radar GPS, escáner QR, SOS |
 | `sombra.html` | Monitores-Sombra (PIN de Sombra) | Escanean la tarjeta del equipo que iluminaron → pierde 50% de la mochila |
 | `admin.html` | Coordinación (PIN de admin) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
+| `pantalla.html` | Proyector o TV en la Fogata | Ranking en vivo, fuego de cada equipo y anuncios grandes (capturas, Faros, mensajes). Solo lee: no hace falta PIN |
 | `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 4 tarjetas de equipo (Rojo, Azul, Verde, Amarillo) |
 | `js/config.js` | Organización | Equipos, estaciones, recursos, reglas, PINs, teléfono SOS |
 

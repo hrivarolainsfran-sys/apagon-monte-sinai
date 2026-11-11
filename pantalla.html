@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#05070b">
+  <title>APAGÓN · Pantalla de la Fogata</title>
+  <link rel="icon" href="icon.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    /* Pantalla para proyector / TV (16:9). Todo escala con el ancho de la pantalla. */
+    html, body { height: 100%; overflow: hidden; }
+    body.tv { max-width: none; margin: 0; padding: 2vh 2.2vw; display: grid; grid-template-rows: auto 1fr auto; gap: 1.6vh; font-size: clamp(14px, 1.15vw, 28px);
+      background: radial-gradient(ellipse 90% 55% at 50% 110%, rgba(255, 122, 31, .16), transparent 70%), var(--bg); }
+    .tv-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 2vw; }
+    .tv-title { font-family: var(--display); color: var(--hi); font-size: 3.4em; line-height: .9; letter-spacing: .06em; text-shadow: 0 0 .6em rgba(255, 178, 56, .35); }
+    .tv-title small { display: block; font-family: system-ui, sans-serif; font-size: .26em; letter-spacing: .18em; color: var(--dim); text-shadow: none; margin-top: .4em; text-transform: uppercase; }
+    .tv-head .status-banner { font-size: 1.25em; padding: .5em 1.4em; }
+    .tv-clock { text-align: right; font-family: var(--display); font-size: 2.6em; line-height: 1; color: var(--text); font-variant-numeric: tabular-nums; }
+    .tv-clock small { display: block; font-family: system-ui, sans-serif; font-size: .32em; color: var(--dim); margin-top: .4em; letter-spacing: .05em; }
+
+    .tv-teams { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.4vw; min-height: 0; }
+    .tcol { --c: #fff; position: relative; display: flex; flex-direction: column; align-items: center; min-height: 0;
+      background: linear-gradient(180deg, color-mix(in srgb, var(--c) 10%, var(--panel)), var(--panel2) 60%);
+      border: 2px solid color-mix(in srgb, var(--c) 45%, var(--line)); border-radius: 1.2vw; padding: 1.4vh 1vw 1.2vh; transition: box-shadow .6s, transform .4s; }
+    .tcol.lit { box-shadow: 0 0 3vw color-mix(in srgb, var(--hi) 45%, transparent), inset 0 0 2vw rgba(255, 178, 56, .12); border-color: var(--hi); }
+    .tcol.hit { animation: hit .9s ease-out; }
+    @keyframes hit { 0%, 40% { box-shadow: 0 0 4vw rgba(255, 90, 78, .8); transform: translateX(-.4vw); } 20%, 60% { transform: translateX(.4vw); } 100% { transform: none; } }
+    .tcol .pos { position: absolute; top: 1vh; left: 1vw; font-family: var(--display); font-size: 1.6em; color: var(--dim); }
+    .tcol .pos.first { color: var(--hi); }
+    .tcol .tname { font-family: var(--display); font-size: 2.3em; letter-spacing: .06em; color: var(--c); text-shadow: 0 0 .5em color-mix(in srgb, var(--c) 50%, transparent); }
+    .tcol .flame { width: 70%; max-width: 15vw; height: auto; flex: 1 1 auto; min-height: 0; aspect-ratio: 100 / 120; margin: .6vh 0; overflow: visible; position: static; }
+    .tcol .pct { font-family: var(--display); font-size: 2em; color: var(--hi); line-height: 1; min-height: 1em; }
+    .tcol .res-list { width: 100%; margin: 1.2vh 0 .6vh; }
+    .tcol .bank-row { grid-template-columns: 1.4em 1fr 3.4em; font-size: 1em; margin: .6vh 0; }
+    .tcol .bar { height: .55em; }
+    .tcol .foot { width: 100%; display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid var(--line); padding-top: .8vh; margin-top: auto; }
+    .tcol .score { font-family: var(--display); font-size: 2.4em; color: var(--text); line-height: 1; }
+    .tcol .score small { font-size: .4em; color: var(--dim); font-family: system-ui, sans-serif; margin-left: .2em; }
+    .tcol .stats { text-align: right; color: var(--dim); font-size: .9em; line-height: 1.5; }
+
+    .tv-ticker { display: flex; gap: 1.2vw; overflow: hidden; white-space: nowrap; border-top: 1px solid var(--line); padding-top: 1.2vh; font-size: 1.05em; color: var(--dim); min-height: 2.2em; mask-image: linear-gradient(90deg, #000 85%, transparent); }
+    .tv-ticker span { padding: .3em .8em; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); }
+    .tv-ticker span:first-child { color: var(--text); border-color: var(--line2); animation: fade .4s; }
+
+    .tv-tools { position: fixed; right: 1.5vw; bottom: 1.5vh; display: flex; gap: .6vw; opacity: .9; transition: opacity .6s; z-index: 30; }
+    body.idle .tv-tools { opacity: 0; pointer-events: none; }
+    body.idle { cursor: none; }
+
+    .announce { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; text-align: center; background: rgba(3, 5, 8, .9); animation: fade .3s; }
+    .announce .box { max-width: 80vw; }
+    .announce .ic { font-size: 9vw; line-height: 1; animation: pop .5s cubic-bezier(.2, .9, .3, 1.4); }
+    .announce .t1 { font-family: var(--display); font-size: 5.5vw; letter-spacing: .05em; line-height: 1.05; margin: 2vh 0 1vh; }
+    .announce .t2 { font-size: 2.2vw; color: var(--text); }
+    .announce.faro { background: radial-gradient(circle at 50% 60%, rgba(255, 140, 40, .35), rgba(3, 5, 8, .94) 60%); }
+    .announce.faro .t1 { color: var(--hi); text-shadow: 0 0 .4em rgba(255, 178, 56, .6); }
+    .announce.capture { background: radial-gradient(circle at 50% 50%, rgba(255, 90, 78, .3), rgba(3, 5, 8, .94) 60%); }
+    .announce.capture .t1 { color: var(--bad); }
+    .announce.msg .t1 { font-size: 4vw; color: var(--text); font-family: system-ui, sans-serif; font-weight: 800; letter-spacing: 0; }
+  </style>
+</head>
+<body class="tv">
+  <header class="tv-head">
+    <div class="tv-title">APAGÓN<small id="brandLine"></small></div>
+    <div class="status-banner" id="statusBanner">…</div>
+    <div class="tv-clock"><span id="clock">--:--</span><small id="elapsed"></small></div>
+  </header>
+
+  <main class="tv-teams" id="teams"></main>
+
+  <footer class="tv-ticker" id="ticker"></footer>
+
+  <div class="tv-tools">
+    <button class="sm" id="soundBtn">🔇 Activar sonido</button>
+    <button class="sm" id="fsBtn">⛶ Pantalla completa</button>
+    <span class="net muted" id="net" style="align-self:center"></span>
+  </div>
+
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <radialGradient id="fg" cx="50%" cy="75%" r="65%">
+        <stop offset="0" stop-color="#fff3c4"/><stop offset=".35" stop-color="#ffc84a"/><stop offset=".75" stop-color="#ff7a1f"/><stop offset="1" stop-color="#d9381e"/>
+      </radialGradient>
+    </defs>
+  </svg>
+
+  <script type="module" src="js/pantalla.js"></script>
+</body>
+</html>
