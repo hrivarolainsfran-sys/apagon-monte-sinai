@@ -95,6 +95,22 @@
       html += card({ title: esc(t.name), sub: 'Tarjeta de equipo · ¡que no la atrapen las Sombras!', code: t.code, cls: 'team', style: `border-color:${t.color}` });
     }
     html += `</div>`;
+    // Fichas para los monitores de misión (sin QR)
+    if ((GAME.missions || []).length) {
+      const rw = r => r?.type === 'puntos' ? `+${r.amount} puntos` : r ? `+${r.amount} ${resById[r.resource]?.icon || ''} ${resById[r.resource]?.name || ''} al Refugio` : '';
+      html += `<h2 class="section">5 · Fichas para los monitores de misión</h2><div class="grid">`;
+      for (const m of GAME.missions) {
+        html += `<div class="card" style="text-align:left">
+          <div class="head" style="justify-content:flex-start">${m.icon} ${esc(m.name)}</div>
+          <div class="sub">📍 ${esc(m.lugar)} · ⏱ ${esc(m.tiempo || '')} · 🏆 ${esc(rw(m.reward))}</div>
+          <p style="margin:10px 0">${esc(m.reto)}</p>
+          <div class="where">🧰 <b>Materiales:</b> ${esc(m.materiales || '—')}</div>
+          <div class="where">✅ Si lo logran: abrir <b>mision.html</b>, elegir esta misión y escanear la tarjeta del equipo.</div>
+          ${brand}
+        </div>`;
+      }
+      html += `</div>`;
+    }
     document.getElementById('out').innerHTML = html;
   </script>
 </body>

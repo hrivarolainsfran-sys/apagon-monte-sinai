@@ -8,6 +8,7 @@ Juego nocturno híbrido (QR + GPS) para el Campamento Monte Sinaí.
 | `sombra.html` | Monitores-Sombra (PIN de Sombra) | Escanean la tarjeta del equipo que iluminaron → pierde 50% de la mochila |
 | `admin.html` | Coordinación (PIN de admin) | Iniciar/pausar, ranking en vivo, mensajes, ajustes, **anclar GPS de estaciones** |
 | `pantalla.html` | Proyector o TV en la Fogata | Ranking en vivo, fuego de cada equipo y anuncios grandes (capturas, Faros, mensajes). Solo lee: no hace falta PIN |
+| `mision.html` | Monitores de cada puesto de misión (PIN de Sombra) | Muestra el reto; si el equipo lo logra, escanean su tarjeta y reciben el premio |
 | `imprimir.html` | Organización | Todos los QR listos para imprimir: inicio, Refugio, 12 estaciones y 4 tarjetas de equipo (Rojo, Azul, Verde, Amarillo) |
 | `js/config.js` | Organización | Equipos, estaciones, recursos, reglas, PINs, teléfono SOS |
 
@@ -50,6 +51,21 @@ Para practicar sin tocar la partida real, agregá `?demo` al final de cualquier 
 | 💥 Trampa | ¡Emboscada! Pierden la mitad de la mochila |
 
 Se cambian en `chests` de `js/config.js`.
+
+## Misiones de grupo
+6 puestos atendidos por un monitor con `mision.html`. Cada equipo puede hacer cada misión una vez; si lo logra, el monitor escanea su tarjeta.
+Las fichas con el reto y los materiales se imprimen en la sección 5 de la hoja de impresión.
+
+| Misión | Dónde | Premio |
+|---|---|---|
+| 🔦 Guía en la oscuridad | Cancha de Fútbol | +2 ⚡ al Refugio |
+| 📡 Mensaje en Morse | Cancha de Vóley | +2 📡 al Refugio |
+| 💧 Cadena de agua | Pileta | +2 💧 al Refugio |
+| ✚ Triaje de emergencia | Cabañas del centro | +2 ✚ al Refugio |
+| 🧠 Memoria del Apagón | Cerca de la Fogata | +30 pts |
+| ⭕ Aro sin soltarse | Galpón junto al Tanque | +30 pts |
+
+Se cambian en `missions` de `js/config.js`.
 
 ## Cómo se juega (para explicar a los chicos)
 - Juntan 💧 Agua, ⚡ Energía, ✚ Medicina y 📡 Señal escaneando estaciones escondidas.
