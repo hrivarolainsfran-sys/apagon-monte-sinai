@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { RES, teamById, stationById, resById, findByCode, total, fmtRes, distM, cooldownMs, STATUS_TEXT } from './engine.js';
+import { RES, teamById, stationById, resById, findByCode, total, fmtRes, fmtSec, distM, cooldownMs, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, isActive, specialText, lugarCorto } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { openScanner, closeScanner, isScannerOpen } from './scanner.js';
 import { $, esc, ls, vibrate, netText, brandHeader, registerSW } from './ui.js';
@@ -25,9 +25,7 @@ function render() {
   document.documentElement.style.setProperty('--team', t.color);
   $('#teamChip').textContent = 'EQUIPO ' + t.name.toUpperCase();
 
-  const sb = $('#statusBanner');
-  sb.textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '');
-  sb.className = 'status-banner ' + state.status;
+  renderLive();
 
   // Mochila: un casillero por lugar disponible
   const load = total(ts.carry);
@@ -72,6 +70,23 @@ function render() {
   updateRadar();
 }
 
+// Estado del juego, cuenta regresiva y eventos activos (se refresca cada segundo)
+function renderLive() {
+  if (!state || !teamId) return;
+  const now = serverNow(), status = effectiveStatus(state, now);
+  const sb = $('#statusBanner');
+  sb.textContent = STATUS_TEXT[status].replace(/^🔴 /, '');
+  sb.className = 'status-banner ' + status;
+  const chips = activeSpecials(state, now).map(x => {
+    const d = SPECIALS[x.kind], left = fmtSec((x.endTs - now) / 1000);
+    const extra = x.kind === 'suministros' ? ': ' + esc(lugarCorto(stationById[x.stationId])) + ' x2' : '';
+    return `<span class="chip ${x.kind}">${d.icon} ${esc(d.name)}${extra} · ${left}</span>`;
+  });
+  if (status === 'running' && state.endsAt) chips.unshift(`<span class="chip timer">⏰ Quedan ${fmtSec((state.endsAt - now) / 1000)}</span>`);
+  $('#specials').innerHTML = chips.join('');
+}
+setInterval(renderLive, 1000);
+
 function setNet(st) { $('#net').textContent = netText(st); }
 
 // ---------------------------------------------------------------- unirse
@@ -82,6 +97,7 @@ function tryJoin(raw) {
   // No mostrar mensajes viejos al entrar
   ls.set('seenMsg', String(Date.now()));
   ls.set('seenCapture', String(Date.now()));
+  ls.set('seenSpecial', String(serverNow()));
   vibrate(120);
   render();
 }
@@ -109,7 +125,8 @@ async function handleCode(raw) {
   const f = findByCode(raw);
   if (!f) return showResult({ ok: false, text: 'Código desconocido. ¿Lo escanearon bien?' });
   if (f.kind === 'team') return showResult({ ok: false, text: f.item.id === teamId ? 'Esa es SU tarjeta de equipo. Cuídenla: las Sombras la buscan.' : `Esa es la tarjeta de ${f.item.name}. Solo las Sombras pueden usarla.` });
-  if (state.status !== 'running') return showResult({ ok: false, text: STATUS_TEXT[state.status] });
+  const status = effectiveStatus(state, serverNow());
+  if (status !== 'running') return showResult({ ok: false, text: state.endsAt && status === 'ended' ? '¡Se acabó el tiempo! Vuelvan a la Fogata.' : STATUS_TEXT[status] });
   const res = f.kind === 'station'
     ? await client.send('scan_station', { teamId, stationId: f.item.id })
     : await client.send('deposit', { teamId });
@@ -149,6 +166,19 @@ function checkNotifications() {
     ls.set('seenMsg', String(Math.max(...fresh.map(m => m.ts))));
     fresh.forEach(m => pushAlert('📢', m.teamId ? 'MENSAJE PARA SU EQUIPO' : 'TRANSMISIÓN', m.text));
   }
+  // Eventos especiales y cuenta regresiva
+  if (ls.get('seenSpecial') == null) ls.set('seenSpecial', String(serverNow()));
+  const seenSp = +ls.get('seenSpecial');
+  const sp = state.feed.filter(f => (f.kind === 'special' || (f.kind === 'countdown' && f.minutes > 0)) && f.ts > seenSp).reverse();
+  if (sp.length) {
+    ls.set('seenSpecial', String(Math.max(...sp.map(f => f.ts))));
+    for (const f of sp) {
+      if (f.kind === 'countdown') { pushAlert('⏰', 'CUENTA REGRESIVA', `¡Quedan ${f.minutes} minutos! Cuando llegue a cero, lo que no esté en el Refugio se pierde.`); continue; }
+      const d = SPECIALS[f.special], x = state.specials.find(y => y.id === f.specialId);
+      pushAlert(d.icon, d.name.toUpperCase(), (x ? specialText(x).replace(/^\S+ [^:]+: /, '') : d.desc).replace(/([^.!])$/, '$1.') + ` Dura ${f.minutes} minutos.`);
+    }
+  }
+
   const ts = state.teams[teamId];
   const seenCap = +ls.get('seenCapture') || 0;
   if (ts.lastCaptureTs > seenCap) {
@@ -176,7 +206,7 @@ setInterval(() => {
   }
   $('#lock').classList.add('hidden');
   const limit = rules.interferenceSec;
-  if (!limit || !state || state.status !== 'running' || !teamId || !visibleSince) { meter.textContent = ''; return; }
+  if (!limit || !state || effectiveStatus(state, serverNow()) !== 'running' || !teamId || !visibleSince) { meter.textContent = ''; return; }
   const secs = Math.max(0, (now - visibleSince) / 1000);
   const left = Math.ceil(limit - secs);
   meter.innerHTML = `<span>📱 Pantalla</span><span class="track"><i style="width:${Math.max(0, Math.min(100, left / limit * 100))}%"></i></span><span>${left}s</span>`;
@@ -221,6 +251,11 @@ function paintRings(n) { $('#radar').dataset.level = String(n); }
 function updateRadar() {
   if (watchId == null || !fix || !state || !teamId) return;
   const now = serverNow();
+  if (isActive(state, 'tormenta', now)) {
+    level = 0; paintRings(0); $('#radarLabel').textContent = '⛈ TORMENTA';
+    $('#radarInfo').textContent = 'La tormenta bloquea el radar. Busquen las estaciones a ojo hasta que pase.';
+    return;
+  }
   const cands = GAME.stations.filter(def => {
     const st = state.stations[def.id];
     if (def.radar === false || st.lat == null || st.usesLeft <= 0) return false;

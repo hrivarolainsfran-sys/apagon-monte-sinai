@@ -47,13 +47,32 @@ export const STATUS_TEXT = {
   ended: '🏁 FIN — vuelvan al Refugio',
 };
 
+// ---------------------------------------------------------------- eventos especiales
+export const SPECIALS = {
+  tormenta:    { icon: '⛈', name: 'Tormenta',             desc: 'El radar no funciona. Busquen las estaciones a ojo.' },
+  suministros: { icon: '📦', name: 'Lluvia de suministros', desc: 'Una estación da el DOBLE de recursos.' },
+  eclipse:     { icon: '🌑', name: 'Eclipse',              desc: 'Si una Sombra los ilumina, pierden TODA la mochila.' },
+};
+// Eventos activos en un momento dado (now = hora del servidor).
+export const activeSpecials = (s, now) => s.specials.filter(x => x.startTs <= now && now < x.endTs);
+export const isActive = (s, kind, now, stationId) => s.specials.some(x => x.kind === kind && x.startTs <= now && now < x.endTs && (!stationId || x.stationId === stationId));
+// Estado efectivo: si terminó la cuenta regresiva, el juego está terminado aunque nadie haya tocado "Terminar".
+export const effectiveStatus = (s, now) => (s.status === 'running' && s.endsAt && now >= s.endsAt) ? 'ended' : s.status;
+// Lugar sin la aclaración entre paréntesis: "Pileta (cerco…)" → "Pileta"
+export const lugarCorto = st => st ? (st.lugar || st.name).replace(/\s*\(.*\)\s*$/, '') : '';
+export const specialText = x => {
+  const d = SPECIALS[x.kind]; if (!d) return '';
+  if (x.kind === 'suministros') { const st = stationById[x.stationId]; return `${d.icon} ${d.name}: ${st ? `${st.name}, en ${lugarCorto(st)},` : 'una estación'} da el doble`; }
+  return `${d.icon} ${d.name}: ${d.desc}`;
+};
+
 export function reduce(events) {
   const rules = GAME.rules;
   const evs = events
     .filter(e => e && e.id && e.type && typeof e.ts === 'number')
     .sort((a, b) => (a.ts - b.ts) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length };
+  const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length, specials: [], endsAt: null };
   for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0 };
   for (const st of GAME.stations) s.stations[st.id] = { usesLeft: st.uses, lastByTeam: {}, lat: st.lat ?? null, lng: st.lng ?? null, acc: null, anchoredTs: null };
 
@@ -88,6 +107,7 @@ function apply(s, e, rules) {
   };
   const no = text => { s.results[e.id] = { ok: false, text }; };
   const running = () => {
+    if (s.status === 'running' && s.endsAt && e.ts >= s.endsAt) { no('¡Se acabó el tiempo! Vuelvan a la Fogata.'); return false; }
     if (s.status === 'running') return true;
     no(s.status === 'paused' ? 'El juego está en pausa.' : s.status === 'ended' ? 'El juego terminó.' : 'El juego todavía no empezó.');
     return false;
@@ -104,6 +124,7 @@ function apply(s, e, rules) {
     case 'game_state': {
       if (!STATUS_TEXT[e.status]) return no('Estado inválido');
       s.status = e.status; s.statusTs = e.ts;
+      if (e.status === 'running' && s.endsAt && e.ts >= s.endsAt) s.endsAt = null; // reanudar después de una cuenta regresiva vencida
       return ok(STATUS_TEXT[e.status], `Juego: ${STATUS_TEXT[e.status]}`, {}, { kind: 'state', status: e.status });
     }
     case 'scan_station': {
@@ -117,9 +138,11 @@ function apply(s, e, rules) {
       if (last != null && e.ts - last < cd) return no(`Ya saquearon ${def.name}. Vuelvan en ${fmtSec((cd - (e.ts - last)) / 1000)}.`);
       const cap = rules.backpackMax - total(team.carry);
       if (cap <= 0) return no(`Mochila llena (${rules.backpackMax}). Vuelvan al Refugio a descargar.`);
-      const give = Math.min(def.amount, cap);
+      const boost = isActive(s, 'suministros', e.ts, def.id);
+      const amount = def.amount * (boost ? 2 : 1);
+      const give = Math.min(amount, cap);
       team.carry[r.id] += give; st.usesLeft--; st.lastByTeam[e.teamId] = e.ts; team.scans++;
-      const txt = `+${give} ${r.icon} ${r.name}${give < def.amount ? ' (no entraba más en la mochila)' : ''}`;
+      const txt = `+${give} ${r.icon} ${r.name}${boost ? ' 📦 ¡DOBLE!' : ''}${give < amount ? ' (no entraba más en la mochila)' : ''}`;
       return ok(txt, `${tname} saqueó ${def.name}: ${txt}`, { resource: r.id }, { kind: 'scan', resource: r.id, amount: give });
     }
     case 'deposit': {
@@ -137,10 +160,12 @@ function apply(s, e, rules) {
       if (!running()) return;
       const since = e.ts - team.lastCaptureTs, imm = rules.captureImmunitySec * 1000;
       if (since < imm) return no(`${tname} todavía tiene inmunidad (${fmtSec((imm - since) / 1000)}).`);
+      const eclipse = isActive(s, 'eclipse', e.ts);
+      const pct = eclipse ? 100 : rules.captureLossPct;
       const lost = zero();
-      for (const r of RES) { lost[r.id] = Math.ceil(team.carry[r.id] * rules.captureLossPct / 100); team.carry[r.id] -= lost[r.id]; }
+      for (const r of RES) { lost[r.id] = Math.ceil(team.carry[r.id] * pct / 100); team.carry[r.id] -= lost[r.id]; }
       team.captures++; team.lastCaptureTs = e.ts; team.lastCaptureLost = lost; team.lastCaptureBy = String(e.by || 'una Sombra').slice(0, 40);
-      const txt = total(lost) ? `🔦 ${tname} fue iluminado y pierde ${fmtRes(lost)}` : `🔦 ${tname} fue iluminado (mochila vacía, no pierde nada)`;
+      const txt = (total(lost) ? `🔦 ${tname} fue iluminado y pierde ${fmtRes(lost)}` : `🔦 ${tname} fue iluminado (mochila vacía, no pierde nada)`) + (eclipse ? ' 🌑 (eclipse)' : '');
       return ok(txt, `${txt} — por ${team.lastCaptureBy}`, {}, { kind: 'capture', lost, by: team.lastCaptureBy });
     }
     case 'adjust': {
@@ -157,6 +182,27 @@ function apply(s, e, rules) {
       if (!text) return no('Mensaje vacío.');
       s.messages.push({ id: e.id, ts: e.ts, text, teamId: e.teamId || null });
       return ok('Mensaje enviado', `📢 ${e.teamId ? `(a ${tname}) ` : ''}${text}`, {}, { kind: 'message', msg: text, toTeam: e.teamId || null });
+    }
+    case 'special': {
+      if (!SPECIALS[e.kind]) return no('Evento especial desconocido.');
+      if (e.kind === 'suministros' && !stationById[e.stationId]) return no('Elegí una estación.');
+      const mins = Math.max(1, Math.min(60, Number(e.minutes) || 5));
+      const x = { id: e.id, kind: e.kind, stationId: e.stationId || null, startTs: e.ts, endTs: e.ts + mins * 60000, minutes: mins };
+      s.specials.push(x);
+      const txt = specialText(x) + ` (${mins} min)`;
+      return ok(txt, txt, {}, { kind: 'special', special: e.kind, stationId: x.stationId, minutes: mins, specialId: x.id });
+    }
+    case 'special_end': {
+      const x = s.specials.find(y => y.id === e.specialId);
+      if (!x || x.endTs <= e.ts) return no('Ese evento ya terminó.');
+      x.endTs = e.ts;
+      return ok('Evento terminado', `${SPECIALS[x.kind].icon} Terminó: ${SPECIALS[x.kind].name}`, {}, { kind: 'special_end', special: x.kind });
+    }
+    case 'countdown': {
+      const mins = Number(e.minutes) || 0;
+      if (mins <= 0) { s.endsAt = null; return ok('Cuenta regresiva cancelada', '⏰ Cuenta regresiva cancelada', {}, { kind: 'countdown', minutes: 0 }); }
+      s.endsAt = e.ts + Math.min(180, mins) * 60000;
+      return ok(`Cuenta regresiva: ${mins} min`, `⏰ ¡Quedan ${mins} minutos!`, {}, { kind: 'countdown', minutes: mins, endsAt: s.endsAt });
     }
     case 'station_pos':
     case 'reset':

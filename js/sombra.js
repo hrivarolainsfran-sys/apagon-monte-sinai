@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { teamById, findByCode, total, fmtSec, STATUS_TEXT } from './engine.js';
+import { teamById, findByCode, total, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { openScanner } from './scanner.js';
 import { $, esc, ls, hhmm, vibrate, netText, brandHeader, pinGate, registerSW } from './ui.js';
@@ -14,9 +14,10 @@ $('#name').onchange = () => ls.set('sombraName', $('#name').value.trim());
 
 function render() {
   if (!state) return;
-  $('#statusBanner').textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '');
-  $('#statusBanner').className = 'status-banner ' + state.status;
-  const now = serverNow();
+  const now = serverNow(), status = effectiveStatus(state, now);
+  $('#statusBanner').textContent = STATUS_TEXT[status].replace(/^🔴 /, '') + (status === 'running' && state.endsAt ? ` · ⏰ ${fmtSec((state.endsAt - now) / 1000)}` : '');
+  $('#statusBanner').className = 'status-banner ' + status;
+  $('#specials').innerHTML = activeSpecials(state, now).map(x => `<span class="chip ${x.kind}">${SPECIALS[x.kind].icon} ${SPECIALS[x.kind].name} · ${fmtSec((x.endTs - now) / 1000)}${x.kind === 'eclipse' ? ' — ¡las capturas quitan TODA la mochila!' : ''}</span>`).join('');
   $('#teams').innerHTML = GAME.teams.map(t => {
     const ts = state.teams[t.id];
     const immLeft = rules.captureImmunitySec * 1000 - (now - ts.lastCaptureTs);

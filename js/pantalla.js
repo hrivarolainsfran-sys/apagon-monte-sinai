@@ -2,7 +2,7 @@
 // Solo lee datos: nunca escribe en la partida. No muestra nombres de estaciones
 // (para no regalar ubicaciones a los equipos que están en el Refugio).
 import { GAME } from './config.js';
-import { RES, teamById, total, STATUS_TEXT } from './engine.js';
+import { RES, teamById, stationById, total, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, lugarCorto } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { $, esc, netText, registerSW } from './ui.js';
 
@@ -40,9 +40,7 @@ for (const t of GAME.teams) {
 
 function render() {
   if (!state) return;
-  const sb = $('#statusBanner');
-  sb.textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '');
-  sb.className = 'status-banner ' + state.status;
+  renderLive();
 
   const posOf = Object.fromEntries(state.ranking.map((r, i) => [r.teamId, i]));
   for (const t of GAME.teams) {
@@ -74,6 +72,21 @@ function render() {
   $('#elapsed').textContent = elapsedText();
 }
 
+// Estado, eventos activos y cuenta regresiva (cada segundo)
+function renderLive() {
+  const now = serverNow(), status = effectiveStatus(state, now);
+  const sb = $('#statusBanner');
+  sb.textContent = STATUS_TEXT[status].replace(/^🔴 /, '');
+  sb.className = 'status-banner ' + status;
+  $('#specials').innerHTML = activeSpecials(state, now).map(x => {
+    const st = x.stationId && stationById[x.stationId];
+    return `<span class="chip ${x.kind}">${SPECIALS[x.kind].icon} ${SPECIALS[x.kind].name}${st ? ': ' + esc(lugarCorto(st)) : ''} · ${fmtSec((x.endTs - now) / 1000)}</span>`;
+  }).join('');
+  const left = state.endsAt ? (state.endsAt - now) / 1000 : null;
+  $('#elapsed').innerHTML = (status === 'running' && left != null && left > 0)
+    ? `<span class="cd${left <= 60 ? ' hot' : ''}">⏰ quedan ${fmtSec(left)}</span>` : elapsedText();
+}
+
 const tn = id => { const t = teamById[id]; return t ? `<b style="color:${t.color}">${esc(t.name)}</b>` : '¿?'; };
 const resTxt = o => RES.filter(r => o?.[r.id]).map(r => `${o[r.id]}${r.icon}`).join(' ');
 function tickerText(f) {
@@ -82,6 +95,8 @@ function tickerText(f) {
     case 'deposit': return f.faroPos != null ? `🔥 ${tn(f.teamId)} encendió el Faro (${f.faroPos + 1}°)` : `🏠 ${tn(f.teamId)} aseguró ${resTxt(f.items)}`;
     case 'capture': return `🔦 Las Sombras iluminaron a ${tn(f.teamId)}${total(f.lost || {}) ? ` (−${total(f.lost)})` : ''}`;
     case 'message': return f.toTeam ? '' : `📢 ${esc(f.msg)}`;
+    case 'special': { const d = SPECIALS[f.special]; const st = f.stationId && stationById[f.stationId]; return d ? `${d.icon} ${d.name}${st ? ' en ' + esc(lugarCorto(st)) : ''}` : ''; }
+    case 'countdown': return f.minutes ? `⏰ ¡Quedan ${f.minutes} minutos!` : '';
     case 'state': return { running: '▶ El Apagón está en marcha', paused: '⏸ Pausa', ended: '🏁 Fin del juego', lobby: '⏳ En espera' }[f.status];
     default: return '';
   }
@@ -102,8 +117,8 @@ function elapsedText() {
 }
 
 setInterval(() => {
-  $('#clock').textContent = new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit' });
-  if (state) $('#elapsed').textContent = elapsedText();
+  $('#clock').textContent = new Date().toLocaleTimeString('es-PY', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (state) renderLive();
 }, 1000);
 
 // ---------------------------------------------------------------- anuncios grandes
@@ -126,6 +141,12 @@ function collectAnnouncements() {
       queue.push({ cls: 'faro', ic: '🔥', t1: `¡${t.name.toUpperCase()} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
     } else if (f.kind === 'message' && !f.toTeam) {
       queue.push({ cls: 'msg', ic: '📢', t1: esc(f.msg), t2: '', sound: 'msg', raw: true });
+    } else if (f.kind === 'special' && SPECIALS[f.special]) {
+      const d = SPECIALS[f.special], st = f.stationId && stationById[f.stationId];
+      queue.push({ cls: f.special === 'eclipse' ? 'capture' : f.special === 'suministros' ? 'faro' : 'special', ic: d.icon, t1: '¡' + d.name.toUpperCase() + '!',
+        t2: (st ? `${lugarCorto(st)} da el DOBLE de recursos` : d.desc) + ` · ${f.minutes} min`, sound: f.special === 'eclipse' ? 'capture' : 'msg' });
+    } else if (f.kind === 'countdown' && f.minutes > 0) {
+      queue.push({ cls: 'faro', ic: '⏰', t1: `¡QUEDAN ${f.minutes} MINUTOS!`, t2: 'Lo que no esté en el Refugio cuando llegue a cero, se pierde', sound: 'faro' });
     } else if (f.kind === 'state' && (f.status === 'running' || f.status === 'ended')) {
       queue.push(f.status === 'running'
         ? { cls: 'faro', ic: '🌑', t1: '¡COMIENZA EL APAGÓN!', t2: 'Junten recursos y vuelvan a la Fogata', sound: 'faro' }

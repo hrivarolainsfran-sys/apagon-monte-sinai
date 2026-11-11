@@ -1,5 +1,5 @@
 import { GAME } from './config.js';
-import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT } from './engine.js';
+import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { $, esc, hhmm, netText, toast, brandHeader, pinGate, registerSW } from './ui.js';
 
@@ -14,11 +14,17 @@ const resCells = o => RES.map(r => `${r.icon}${o[r.id]}`).join(' ');
 
 function render() {
   if (!state) return;
-  const sb = $('#statusBanner');
-  sb.textContent = STATUS_TEXT[state.status].replace(/^🔴 /, '') + (state.statusTs ? ` · desde ${hhmm(state.statusTs)}` : '');
-  sb.className = 'status-banner ' + state.status;
-
   const now = serverNow();
+  const status = effectiveStatus(state, now);
+  const sb = $('#statusBanner');
+  sb.textContent = STATUS_TEXT[status].replace(/^🔴 /, '') + (state.statusTs ? ` · desde ${hhmm(state.statusTs)}` : '')
+    + (status === 'running' && state.endsAt ? ` · ⏰ quedan ${fmtSec((state.endsAt - now) / 1000)}` : '');
+  sb.className = 'status-banner ' + status;
+
+  // Eventos especiales activos
+  const act = activeSpecials(state, now);
+  $('#activeSpecials').innerHTML = act.length ? act.map(x => `<div class="row" style="margin:4px 0"><span>${SPECIALS[x.kind].icon} <b>${SPECIALS[x.kind].name}</b>${x.stationId ? ' · ' + esc(stationById[x.stationId].name) : ''} · ${fmtSec((x.endTs - now) / 1000)}</span><button class="sm shrink" data-spend="${x.id}">Terminar</button></div>`).join('') : 'Ningún evento activo.';
+  $('#cdInfo').textContent = state.endsAt ? (now < state.endsAt ? `Termina a las ${hhmm(state.endsAt)}` : 'La cuenta regresiva terminó: el juego está cerrado.') : '';
   $('#teams').innerHTML = state.ranking.map((rk, i) => {
     const t = teamById[rk.teamId], ts = state.teams[rk.teamId];
     const imm = now - ts.lastCaptureTs < rules.captureImmunitySec * 1000;
@@ -49,7 +55,8 @@ function render() {
     </tr>`;
   }).join('');
 
-  $('#feed').innerHTML = state.feed.slice(0, 120).map(f => {
+  const feedKey = state.feed.length + ':' + (state.feed[0]?.id || '');
+  if (feedKey !== render.feedKey) render.feedKey = feedKey, $('#feed').innerHTML = state.feed.slice(0, 120).map(f => {
     const t = f.teamId && teamById[f.teamId];
     return `<div><time>${hhmm(f.ts)}</time>${t ? `<span class="dot" style="background:${t.color}"></span>` : ''}${esc(f.text)}</div>`;
   }).join('') || '<p class="muted">Sin actividad todavía.</p>';
@@ -150,7 +157,30 @@ $('#gpsBtn').onclick = () => {
   }, err => { $('#gpsInfo').textContent = 'Error GPS: ' + err.message; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
 };
 
-setInterval(render, 5000); // refresca inmunidades
+// ---- eventos especiales
+$('#spStation').innerHTML = GAME.stations.map(st => `<option value="${st.id}">${resById[st.resource].icon} ${esc(st.name)}${st.lugar ? ' — ' + esc(st.lugar) : ''}</option>`).join('');
+document.querySelectorAll('[data-sp]').forEach(b => b.onclick = async () => {
+  const kind = b.dataset.sp, minutes = Number($('#spMin').value);
+  const d = SPECIALS[kind];
+  const extra = kind === 'suministros' ? { stationId: $('#spStation').value } : {};
+  if (!confirm(`¿Activar ${d.icon} ${d.name} por ${minutes} minutos?\n${d.desc}`)) return;
+  const res = await client.send('special', { kind, minutes, ...extra });
+  toast(res.text, res.ok);
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-spend]');
+  if (!b) return;
+  const res = await client.send('special_end', { specialId: b.dataset.spend });
+  toast(res.text, res.ok);
+});
+document.querySelectorAll('[data-cd]').forEach(b => b.onclick = async () => {
+  const minutes = Number(b.dataset.cd);
+  if (minutes && !confirm(`¿Empezar la cuenta regresiva final de ${minutes} minutos? Al llegar a cero el juego termina solo.`)) return;
+  const res = await client.send('countdown', { minutes });
+  toast(res.text, res.ok);
+});
+
+setInterval(render, 1000); // refresca inmunidades y relojes
 
 pinGate([GAME.adminPinHash], 'admin', async () => {
   client = await startClient({ onState: s => { state = s; render(); }, onStatus: st => { $('#net').textContent = netText(st); } });
