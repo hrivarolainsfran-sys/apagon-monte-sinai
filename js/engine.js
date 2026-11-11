@@ -80,9 +80,11 @@ export function reduce(events) {
 function apply(s, e, rules) {
   const team = e.teamId ? s.teams[e.teamId] : null;
   const tname = e.teamId && teamById[e.teamId] ? teamById[e.teamId].name : '¿?';
-  const ok = (text, feedText, extra = {}) => {
+  // kind/datos extra en el feed: la pantalla de la Fogata arma sus propios textos
+  // (sin revelar nombres de estaciones).
+  const ok = (text, feedText, extra = {}, feedExtra = {}) => {
     s.results[e.id] = { ok: true, text, ...extra };
-    if (feedText) s.feed.push({ id: e.id, ts: e.ts, text: feedText, teamId: e.teamId || null });
+    if (feedText) s.feed.push({ id: e.id, ts: e.ts, text: feedText, teamId: e.teamId || null, ...feedExtra });
   };
   const no = text => { s.results[e.id] = { ok: false, text }; };
   const running = () => {
@@ -102,7 +104,7 @@ function apply(s, e, rules) {
     case 'game_state': {
       if (!STATUS_TEXT[e.status]) return no('Estado inválido');
       s.status = e.status; s.statusTs = e.ts;
-      return ok(STATUS_TEXT[e.status], `Juego: ${STATUS_TEXT[e.status]}`);
+      return ok(STATUS_TEXT[e.status], `Juego: ${STATUS_TEXT[e.status]}`, {}, { kind: 'state', status: e.status });
     }
     case 'scan_station': {
       if (!team) return no('Equipo desconocido.');
@@ -118,16 +120,17 @@ function apply(s, e, rules) {
       const give = Math.min(def.amount, cap);
       team.carry[r.id] += give; st.usesLeft--; st.lastByTeam[e.teamId] = e.ts; team.scans++;
       const txt = `+${give} ${r.icon} ${r.name}${give < def.amount ? ' (no entraba más en la mochila)' : ''}`;
-      return ok(txt, `${tname} saqueó ${def.name}: ${txt}`, { resource: r.id });
+      return ok(txt, `${tname} saqueó ${def.name}: ${txt}`, { resource: r.id }, { kind: 'scan', resource: r.id, amount: give });
     }
     case 'deposit': {
       if (!team) return no('Equipo desconocido.');
       if (!running()) return;
       if (total(team.carry) === 0) return no('La mochila está vacía. Salgan a buscar recursos.');
-      const parts = fmtRes(team.carry);
+      const parts = fmtRes(team.carry), items = { ...team.carry };
       for (const r of RES) { team.bank[r.id] += team.carry[r.id]; team.carry[r.id] = 0; }
-      const txt = `Asegurado en el Refugio: ${parts}` + checkFaro();
-      return ok(txt, `${tname} — ${txt}`);
+      const lit = checkFaro();
+      const txt = `Asegurado en el Refugio: ${parts}` + lit;
+      return ok(txt, `${tname} — ${txt}`, {}, { kind: 'deposit', items, faroPos: lit ? team.faroPos : null });
     }
     case 'capture': {
       if (!team) return no('Equipo desconocido.');
@@ -138,21 +141,22 @@ function apply(s, e, rules) {
       for (const r of RES) { lost[r.id] = Math.ceil(team.carry[r.id] * rules.captureLossPct / 100); team.carry[r.id] -= lost[r.id]; }
       team.captures++; team.lastCaptureTs = e.ts; team.lastCaptureLost = lost; team.lastCaptureBy = String(e.by || 'una Sombra').slice(0, 40);
       const txt = total(lost) ? `🔦 ${tname} fue iluminado y pierde ${fmtRes(lost)}` : `🔦 ${tname} fue iluminado (mochila vacía, no pierde nada)`;
-      return ok(txt, `${txt} — por ${team.lastCaptureBy}`);
+      return ok(txt, `${txt} — por ${team.lastCaptureBy}`, {}, { kind: 'capture', lost, by: team.lastCaptureBy });
     }
     case 'adjust': {
       if (!team || !resById[e.resource] || !['carry', 'bank'].includes(e.where)) return no('Ajuste inválido.');
       const d = Math.trunc(Number(e.delta) || 0);
       team[e.where][e.resource] = Math.max(0, team[e.where][e.resource] + d);
       const r = resById[e.resource];
-      const txt = `Ajuste admin: ${d > 0 ? '+' : ''}${d} ${r.icon} en ${e.where === 'bank' ? 'Refugio' : 'mochila'}` + (e.where === 'bank' ? checkFaro() : '');
-      return ok(txt, `${tname} — ${txt}`);
+      const lit = e.where === 'bank' ? checkFaro() : '';
+      const txt = `Ajuste admin: ${d > 0 ? '+' : ''}${d} ${r.icon} en ${e.where === 'bank' ? 'Refugio' : 'mochila'}` + lit;
+      return ok(txt, `${tname} — ${txt}`, {}, { kind: 'adjust', faroPos: lit ? team.faroPos : null });
     }
     case 'message': {
       const text = String(e.text || '').slice(0, 280);
       if (!text) return no('Mensaje vacío.');
       s.messages.push({ id: e.id, ts: e.ts, text, teamId: e.teamId || null });
-      return ok('Mensaje enviado', `📢 ${e.teamId ? `(a ${tname}) ` : ''}${text}`);
+      return ok('Mensaje enviado', `📢 ${e.teamId ? `(a ${tname}) ` : ''}${text}`, {}, { kind: 'message', msg: text, toTeam: e.teamId || null });
     }
     case 'station_pos':
     case 'reset':
