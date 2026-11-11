@@ -72,6 +72,11 @@ export async function startClient({ onState, onStatus }) {
       Promise.resolve().then(() => be.add(ev)).catch(err => { console.error(err); onStatus({ mode: be.mode, error: 'Error al guardar: ' + err.message }); });
       return p;
     },
+    // Ubicación de los equipos: un documento por equipo que se sobrescribe (no se guarda historial).
+    setPresence(teamId, data) {
+      return Promise.resolve(be.setPresence(teamId, { ...data, teamId, ts: Date.now() + clockOffset })).catch(err => console.warn('presencia', err));
+    },
+    onPresence(cb) { be.onPresence(cb); },
   };
 }
 
@@ -83,8 +88,17 @@ function demoBackend(onEvents, onStatus) {
   window.addEventListener('storage', e => { if (e.key === key) emit(); });
   if (bc) bc.onmessage = emit;
   setTimeout(() => { onStatus({ mode: 'demo', online: true, pending: 0 }); emit(); }, 0);
+  const pkey = 'apagon_demo_presence:' + GAME.gameId;
+  const readP = () => { try { return JSON.parse(localStorage.getItem(pkey) || '{}'); } catch { return {}; } };
+  const pListeners = [];
+  const emitP = () => pListeners.forEach(f => f(readP()));
+  window.addEventListener('storage', e => { if (e.key === pkey) emitP(); });
+  const pbc = 'BroadcastChannel' in window ? new BroadcastChannel(pkey) : null;
+  if (pbc) pbc.onmessage = emitP;
   return {
     mode: 'demo',
+    setPresence(teamId, data) { const p = readP(); p[teamId] = data; localStorage.setItem(pkey, JSON.stringify(p)); if (pbc) pbc.postMessage(1); emitP(); },
+    onPresence(cb) { pListeners.push(cb); setTimeout(() => cb(readP()), 0); },
     add(ev) {
       const a = read(); a.push(ev);
       localStorage.setItem(key, JSON.stringify(a));
@@ -110,5 +124,13 @@ async function firebaseBackend(onEvents, onStatus) {
     onStatus({ mode: 'firebase', online: !snap.metadata.fromCache, pending });
     onEvents(snap.docs.map(d => d.data()));
   }, err => onStatus({ mode: 'firebase', error: err.message }));
-  return { mode: 'firebase', add: ev => fs.setDoc(fs.doc(col, ev.id), ev) };
+  const pcol = fs.collection(db, 'games', GAME.gameId, 'presence');
+  return {
+    mode: 'firebase',
+    add: ev => fs.setDoc(fs.doc(col, ev.id), ev),
+    setPresence: (teamId, data) => fs.setDoc(fs.doc(pcol, teamId), data),
+    onPresence(cb) {
+      fs.onSnapshot(pcol, snap => cb(Object.fromEntries(snap.docs.map(d => [d.id, d.data()]))), err => console.warn('presencia', err));
+    },
+  };
 }

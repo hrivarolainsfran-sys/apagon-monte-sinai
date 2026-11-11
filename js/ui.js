@@ -50,7 +50,7 @@ async function pinHash(pin) {
 // Pantalla de PIN para admin y Sombras. Compara contra hashes: el PIN no aparece en el código.
 // (Protege de curiosos; no es seguridad fuerte.)
 export function pinGate(hashes, key, onOk) {
-  if (sessionStorage.getItem(GAME.gameId + ':' + key) === 'ok') return onOk();
+  if (sessionStorage.getItem(GAME.gameId + ':' + key) === 'ok') return onOk(sessionStorage.getItem(GAME.gameId + ':' + key + ':pin') || '');
   const ov = document.createElement('div');
   ov.className = 'overlay';
   ov.innerHTML = `${brandHeader()}<h2>Ingresá el PIN</h2><form class="row" style="max-width:320px;width:100%"><input type="password" inputmode="numeric" autocomplete="off" placeholder="PIN"><button class="primary">Entrar</button></form><p class="muted" data-m></p>`;
@@ -58,7 +58,12 @@ export function pinGate(hashes, key, onOk) {
   const input = ov.querySelector('input'); input.focus();
   ov.querySelector('form').addEventListener('submit', async e => {
     e.preventDefault();
-    if (hashes.includes(await pinHash(input.value.trim()))) { sessionStorage.setItem(GAME.gameId + ':' + key, 'ok'); ov.remove(); onOk(); }
+    const pin = input.value.trim();
+    if (hashes.includes(await pinHash(pin))) {
+      sessionStorage.setItem(GAME.gameId + ':' + key, 'ok');
+      sessionStorage.setItem(GAME.gameId + ':' + key + ':pin', pin); // solo esta pestaña; sirve para descifrar ubicaciones
+      ov.remove(); onOk(pin);
+    }
     else { ov.querySelector('[data-m]').textContent = 'PIN incorrecto'; input.value = ''; }
   });
 }

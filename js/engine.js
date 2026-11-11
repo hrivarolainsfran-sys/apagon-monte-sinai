@@ -19,6 +19,7 @@ export const CHEST_EFFECTS = {
   escudo:  { icon: '🛡', name: 'Escudo' },
   mapa:    { icon: '📜', name: 'Mapa del tesoro' },
   trampa:  { icon: '💥', name: 'Trampa' },
+  bengala: { icon: '🎆', name: 'Bengala' },
 };
 
 export const normCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -81,19 +82,26 @@ export const specialText = x => {
   return `${d.icon} ${d.name}: ${d.desc}`;
 };
 
+// Puntaje en el momento (para decidir a quién apunta una bengala)
+export const liveScore = (t, rules = GAME.rules) => RES.reduce((a, r) => a + t.bank[r.id] * r.points, 0) + (t.faroPos != null ? (rules.faroBonus[t.faroPos] || 0) : 0) + t.bonusPts;
+
 export function reduce(events) {
   const rules = GAME.rules;
   const evs = events
     .filter(e => e && e.id && e.type && typeof e.ts === 'number')
     .sort((a, b) => (a.ts - b.ts) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
-  const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length, specials: [], endsAt: null };
-  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0, bonusPts: 0, shieldUntil: 0, missions: {} };
+  const s = { status: 'lobby', statusTs: 0, teams: {}, stations: {}, results: {}, feed: [], messages: [], ranking: [], faroCount: 0, eventCount: evs.length, specials: [], endsAt: null, shadows: {}, base: null, ceremonyTs: null };
+  for (const t of GAME.teams) s.teams[t.id] = { carry: zero(), bank: zero(), faroAt: null, faroPos: null, captures: 0, lastCaptureTs: 0, lastCaptureLost: null, lastCaptureBy: '', scans: 0, score: 0, bonusPts: 0, shieldUntil: 0, missions: {}, flareUntil: 0, trades: 0 };
   s.chests = Object.fromEntries(CHESTS.map(c => [c.id, { openedBy: null, ts: null }]));
   for (const st of GAME.stations) s.stations[st.id] = { usesLeft: st.uses, lastByTeam: {}, lat: st.lat ?? null, lng: st.lng ?? null, acc: null, anchoredTs: null };
 
   // Las posiciones GPS de las estaciones sobreviven a un reinicio.
   for (const e of evs) {
+    if (e.type === 'station_pos' && e.stationId === 'base') {
+      s.base = { lat: e.lat, lng: e.lng, acc: e.acc ?? null, anchoredTs: e.ts };
+      s.results[e.id] = { ok: true, text: 'Refugio anclado' };
+    }
     if (e.type === 'station_pos' && s.stations[e.stationId]) {
       Object.assign(s.stations[e.stationId], { lat: e.lat, lng: e.lng, acc: e.acc ?? null, anchoredTs: e.ts });
       s.results[e.id] = { ok: true, text: 'Estación anclada' };
@@ -182,6 +190,7 @@ function apply(s, e, rules) {
       const lost = zero();
       for (const r of RES) { lost[r.id] = Math.ceil(team.carry[r.id] * pct / 100); team.carry[r.id] -= lost[r.id]; }
       team.captures++; team.lastCaptureTs = e.ts; team.lastCaptureLost = lost; team.lastCaptureBy = String(e.by || 'una Sombra').slice(0, 40);
+      if (e.by && e.by !== 'Admin') s.shadows[team.lastCaptureBy] = (s.shadows[team.lastCaptureBy] || 0) + 1;
       const txt = (total(lost) ? `🔦 ${tname} fue iluminado y pierde ${fmtRes(lost)}` : `🔦 ${tname} fue iluminado (mochila vacía, no pierde nada)`) + (eclipse ? ' 🌑 (eclipse)' : '');
       return ok(txt, `${txt} — por ${team.lastCaptureBy}`, {}, { kind: 'capture', lost, by: team.lastCaptureBy });
     }
@@ -246,6 +255,17 @@ function apply(s, e, rules) {
           pub = `💥 ${tname} cayó en una trampa`; extra = { lost };
           break;
         }
+        case 'bengala': {
+          const m = def.amount || 5;
+          const target = GAME.teams.filter(t => t.id !== e.teamId).map(t => ({ id: t.id, sc: liveScore(s.teams[t.id], rules) })).sort((a, b) => b.sc - a.sc)[0];
+          if (target) {
+            s.teams[target.id].flareUntil = Math.max(s.teams[target.id].flareUntil, e.ts) + m * 60000;
+            const tn2 = teamById[target.id].name;
+            txt = `🎆 ¡Bengala! La lanzaron contra ${tn2} (el equipo que más amenaza): su radar queda encandilado ${m} minutos.`;
+            pub = `🎆 ${tname} lanzó una bengala contra ${tn2}`; extra = { target: target.id, amount: m };
+          } else { txt = '🎆 La bengala se apagó sola.'; pub = `🎆 ${tname} encontró una bengala`; }
+          break;
+        }
         default: txt = 'El cofre estaba vacío.'; pub = `${tname} abrió un cofre vacío`;
       }
       return ok(txt, pub, { chest: def.effect }, { kind: 'chest', effect: def.effect, chestId: def.id, ...extra });
@@ -264,6 +284,31 @@ function apply(s, e, rules) {
       const txt = `💪 ${tname} completó "${m.name}": ${rewardText(rw)}${lit}`;
       return ok(txt, txt, {}, { kind: 'mission', missionId: m.id, faroPos: lit ? team.faroPos : null });
     }
+    case 'trade': {
+      const A = s.teams[e.teamA], B = s.teams[e.teamB];
+      if (!A || !B || e.teamA === e.teamB) return no('Elegí dos equipos distintos.');
+      if (!running()) return;
+      const clean = o => Object.fromEntries(RES.map(r => [r.id, Math.max(0, Math.trunc(Number(o?.[r.id]) || 0))]));
+      const gA = clean(e.giveA), gB = clean(e.giveB);
+      if (!total(gA) && !total(gB)) return no('El trueque está vacío.');
+      const nA = teamById[e.teamA].name, nB = teamById[e.teamB].name;
+      for (const r of RES) {
+        if (A.bank[r.id] < gA[r.id]) return no(`${nA} no tiene ${gA[r.id]} ${r.icon} en el Refugio (tiene ${A.bank[r.id]}).`);
+        if (B.bank[r.id] < gB[r.id]) return no(`${nB} no tiene ${gB[r.id]} ${r.icon} en el Refugio (tiene ${B.bank[r.id]}).`);
+      }
+      for (const r of RES) { A.bank[r.id] += gB[r.id] - gA[r.id]; B.bank[r.id] += gA[r.id] - gB[r.id]; }
+      A.trades++; B.trades++;
+      const faroFor = (t, id) => {
+        if (t.faroAt == null && RES.every(r => t.bank[r.id] >= (rules.faroGoal[r.id] || 0))) { t.faroAt = e.ts; t.faroPos = s.faroCount++; return { id, pos: t.faroPos }; }
+        return null;
+      };
+      const lit = [faroFor(A, e.teamA), faroFor(B, e.teamB)].filter(Boolean);
+      const txt = `🤝 Trueque: ${nA} da ${fmtRes(gA)} y ${nB} da ${fmtRes(gB)}` + lit.map(l => ` · 🔥 ¡${teamById[l.id].name} encendió el Faro!`).join('');
+      return ok(txt, txt, {}, { kind: 'trade', teamA: e.teamA, teamB: e.teamB, giveA: gA, giveB: gB, lit });
+    }
+    case 'ceremony':
+      s.ceremonyTs = e.ts;
+      return ok('Premiación en marcha en la Fogata', '🏆 Comienza la premiación', {}, { kind: 'ceremony' });
     case 'intro':
       return ok('Intro en marcha en la Fogata', '🎬 Comienza la intro del Apagón', {}, { kind: 'intro' });
     case 'special': {

@@ -12,8 +12,8 @@ const L = (href, txt) => `<a href="${href}" target="_blank">${txt}</a>`;
 const PHASES = [
   { id: 'a', title: '1 · Una semana antes', when: 'Preparación general', items: [
     ['a1', 'Cargar el teléfono real de SOS', `En <code>js/config.js</code> → <code>coordinator.phone</code>. Hoy dice ${esc(GAME.coordinator.phone)}.`, 'Coordinación'],
-    ['a2', 'Definir el equipo de staff', 'Coordinador (panel) · 3–4 Sombras · 6 monitores de misión · 1 persona en la Fogata/pantalla · 1 responsable de primeros auxilios.', 'Coordinación'],
-    ['a3', 'Pasar links y PIN por privado', `Sombras y misiones: PIN de Sombra. Coordinación: PIN de admin. ${L('sombra.html', 'Sombra')} · ${L('mision.html', 'Misión')} · ${L('admin.html', 'Panel')}`, 'Coordinación'],
+    ['a2', 'Definir el equipo de staff', 'Coordinador (panel) · 3–4 Sombras · 6 monitores de misión · 1 persona en la Fogata (pantalla + trueques) · 1 responsable de primeros auxilios.', 'Coordinación'],
+    ['a3', 'Pasar links y PIN por privado', `Sombras, misiones y trueque: PIN de Sombra. Coordinación: PIN de admin. ${L('sombra.html', 'Sombra')} · ${L('mision.html', 'Misión')} · ${L('trueque.html', 'Trueque')} · ${L('admin.html', 'Panel')}`, 'Coordinación'],
     ['a4', 'Imprimir todo y plastificar mate', `${L('imprimir.html', 'Hoja de impresión')}: 1 inicio + Refugio · 2 estaciones (12) · 3 cofres (${CHESTS.length}) · 4 tarjetas de equipo (${GAME.teams.length}) · 5 fichas de misión (${MISSIONS.length}). Imprimir desde la dirección publicada.`, 'Coordinación'],
     ['a5', 'Imprimir tablas Morse', 'Una por equipo para la misión "Mensaje en Morse".', 'Misiones'],
     ['a6', 'Juntar materiales de misiones', MISSIONS.map(m => `${m.icon} ${esc(m.materiales || '')}`).join('<br>'), 'Misiones'],
@@ -23,7 +23,8 @@ const PHASES = [
   { id: 'b', title: '2 · Ensayo general', when: 'El día anterior, al atardecer y ya de noche', items: [
     ['b1', 'Recorrer límites y zonas peligrosas', 'Marcar el perímetro con luces o cinta. Señalar pozos, raíces, la pileta. Definir el punto de reunión de emergencia.', 'Todos'],
     ['b2', 'Esconder los QR según el lugar sugerido', 'Cada tarjeta dice "📍 Esconder en". Si cambian un lugar, anotarlo. El QR a la altura de la vista, con la marca luminosa AL LADO (no encima).', 'Coordinación'],
-    ['b3', 'Anclar el GPS de las estaciones', `En el ${L('admin.html', 'panel')} → Estaciones → "Activar mi GPS" y "Anclar aquí" parado en cada QR. Esperar ±15 m.`, 'Coordinación'],
+    ['b3', 'Anclar el GPS del Refugio y de las estaciones', `En el ${L('admin.html', 'panel')} → Estaciones → "Activar mi GPS". Parado en la Fogata: "Anclar el Refugio"; después "Anclar aquí" en cada QR. Esperar ±15 m.`, 'Coordinación'],
+    ['b3b', 'Probar el mapa en vivo', 'Con el juego iniciado, un Operador camina por el campamento: en el panel tiene que aparecer en el mapa y saltar la alerta si sale de la zona.', 'Coordinación'],
     ['b4', 'Probar celulares (arriba en esta página)', 'Al menos un Android barato y un iPhone, DE NOCHE: escanear un QR real con linterna, GPS, conexión en cada zona.', 'Todos'],
     ['b5', 'Medir la señal en cada estación', 'Con "Conexión al juego" de esta página. Donde no haya señal, la app guarda y envía después: está bien, pero conviene saberlo.', 'Coordinación'],
     ['b6', 'Probar la Pantalla de la Fogata', `${L('pantalla.html', 'Pantalla')} → Activar sonido → Pantalla completa → 🎬 Ver intro. Revisar volumen y que la notebook no se suspenda.`, 'Fogata'],
@@ -36,7 +37,7 @@ const PHASES = [
     ['c3', 'Staff en sus puestos', 'Monitores de misión con su ficha, materiales y mision.html abierto. Sombras con linterna roja y sombra.html abierto.', 'Todos'],
     ['c4', 'Armar los 4 equipos y repartir roles', 'Operador, 2 Vigías, Rastreador, Portador, Capitán. El Portador recibe la tarjeta del equipo.', 'Coordinación'],
     ['c5', 'Cada Operador escanea su tarjeta', 'Desde el QR "ENTRÁ AL JUEGO". Verificar que diga EQUIPO ROJO/AZUL/VERDE/AMARILLO.', 'Coordinación'],
-    ['c6', 'Charla de seguridad (3 min)', 'Caminar, no correr · nadie se separa · las Sombras atrapan con luz, nunca tocando · Fogata = zona segura · botón SOS · punto de reunión.', 'Coordinación'],
+    ['c6', 'Charla de seguridad (3 min)', 'Caminar, no correr · nadie se separa · las Sombras atrapan con luz, nunca tocando · Fogata = zona segura · botón SOS · punto de reunión · el celular del Operador comparte su ubicación con la coordinación (cifrada).', 'Coordinación'],
     ['c7', '🎬 Intro → ▶ Iniciar', 'Panel: "Reproducir la intro" y al terminar "Iniciar".', 'Coordinación'],
   ]},
   { id: 'd', title: '4 · Durante y al final', when: 'Juego de ~75 minutos', items: [
@@ -45,7 +46,7 @@ const PHASES = [
     ['d3', 'Minuto 50 · 🌑 Eclipse (5 min)', 'Avisar a las Sombras que salgan con todo.', 'Coordinación'],
     ['d4', 'Minuto 60 · ⏰ Cuenta regresiva de 15 min', '', 'Coordinación'],
     ['d5', 'Fin: TODOS a la Fogata y contar a los chicos', 'Conteo uno por uno antes de anunciar ganadores.', 'Todos'],
-    ['d6', 'Premiación con la Pantalla', 'Primer Faro encendido, más puntos, mejor misión…', 'Coordinación'],
+    ['d6', '🏆 Premiación en la Pantalla', 'Panel → "Premiación en la Fogata": menciones, podio y reflexión de cierre (queda en pantalla hasta tocar Cerrar).', 'Coordinación'],
     ['d7', 'Recolectar QR y materiales', `Lista de QR: Refugio, 12 estaciones, ${CHESTS.length} cofres, ${GAME.teams.length} tarjetas.`, 'Todos'],
   ]},
 ];

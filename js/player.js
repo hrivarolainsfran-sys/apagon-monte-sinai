@@ -1,6 +1,7 @@
 import { GAME } from './config.js';
 import { RES, teamById, stationById, resById, findByCode, total, fmtRes, fmtSec, distM, cooldownMs, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, isActive, specialText, lugarCorto, MISSIONS, missionById, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
+import { encryptForAdmin } from './geo.js';
 import { openScanner, closeScanner, isScannerOpen } from './scanner.js';
 import { $, esc, ls, vibrate, netText, brandHeader, registerSW, speak, stopSpeaking, canSpeak } from './ui.js';
 
@@ -92,6 +93,9 @@ function renderLive() {
     const extra = x.kind === 'suministros' ? ': ' + esc(lugarCorto(stationById[x.stationId])) + ' x2' : '';
     return `<span class="chip ${x.kind}">${d.icon} ${esc(d.name)}${extra} · ${left}</span>`;
   });
+  const flare = state.teams[teamId].flareUntil - now;
+  if (flare > 0) chips.unshift(`<span class="chip eclipse">🎆 Encandilados · ${fmtSec(flare / 1000)}</span>`);
+  if (tracking) chips.push(`<span class="chip">📍 Ubicación compartida con coordinación</span>`);
   const shield = state.teams[teamId].shieldUntil - now;
   if (shield > 0) chips.unshift(`<span class="chip suministros">🛡 Escudo · ${fmtSec(shield / 1000)}</span>`);
   if (status === 'running' && state.endsAt) chips.unshift(`<span class="chip timer">⏰ Quedan ${fmtSec((state.endsAt - now) / 1000)}</span>`);
@@ -111,6 +115,7 @@ function tryJoin(raw) {
   ls.set('seenCapture', String(Date.now()));
   ls.set('seenSpecial', String(serverNow()));
   ls.set('seenMission', String(serverNow()));
+  ls.set('seenOther', String(serverNow()));
   vibrate(120);
   render();
 }
@@ -216,6 +221,25 @@ function checkNotifications() {
     }
   }
 
+  // Trueques y bengalas que afectan a este equipo
+  if (ls.get('seenOther') == null) ls.set('seenOther', String(serverNow()));
+  const seenO = +ls.get('seenOther');
+  const oth = state.feed.filter(f => f.ts > seenO && (
+    (f.kind === 'trade' && (f.teamA === teamId || f.teamB === teamId)) ||
+    (f.kind === 'chest' && f.effect === 'bengala' && f.target === teamId))).reverse();
+  if (oth.length) {
+    ls.set('seenOther', String(Math.max(...oth.map(f => f.ts))));
+    for (const f of oth) {
+      if (f.kind === 'trade') {
+        const mine = f.teamA === teamId ? f.giveA : f.giveB, theirs = f.teamA === teamId ? f.giveB : f.giveA;
+        const other = teamById[f.teamA === teamId ? f.teamB : f.teamA]?.name || '';
+        pushAlert('🤝', 'TRUEQUE HECHO', `Con ${other}: dieron ${fmtRes(mine)} y recibieron ${fmtRes(theirs)} en el Refugio.` + ((f.lit || []).some(l => l.id === teamId) ? ' 🔥 ¡Y encendieron el Faro!' : ''));
+      } else {
+        pushAlert('🎆', '¡LOS ENCANDILARON!', `${teamById[f.teamId]?.name || 'Otro equipo'} les lanzó una bengala: el radar no funciona por ${f.amount} minutos. Busquen a ojo.`);
+      }
+    }
+  }
+
   // Misiones completadas (las registra el monitor desde su celular)
   if (ls.get('seenMission') == null) ls.set('seenMission', String(serverNow()));
   const seenMi = +ls.get('seenMission');
@@ -300,6 +324,11 @@ function paintRings(n) { $('#radar').dataset.level = String(n); }
 function updateRadar() {
   if (watchId == null || !fix || !state || !teamId) return;
   const now = serverNow();
+  if (state.teams[teamId].flareUntil > now) {
+    level = 0; paintRings(0); $('#radarLabel').textContent = '🎆 ENCANDILADOS';
+    $('#radarInfo').textContent = `Una bengala les encandiló el radar (${fmtSec((state.teams[teamId].flareUntil - now) / 1000)}). Busquen a ojo.`;
+    return;
+  }
   if (isActive(state, 'tormenta', now)) {
     level = 0; paintRings(0); $('#radarLabel').textContent = '⛈ TORMENTA';
     $('#radarInfo').textContent = 'La tormenta bloquea el radar. Busquen las estaciones a ojo hasta que pase.';
@@ -363,9 +392,29 @@ setInterval(() => {
 // Revisar enfriamientos que vencen aunque no haya eventos nuevos
 setInterval(updateRadar, 5000);
 
+// ---------------------------------------------------------------- ubicación del equipo para la coordinación (seguridad)
+// Solo mientras el juego está en marcha. Se envía cada `trackEverySec` o si se movieron más de 25 m.
+let tracking = false, trackWatch = null, lastSent = null;
+function updateTracking() {
+  const should = !!(teamId && state && client && effectiveStatus(state, serverNow()) === 'running' && 'geolocation' in navigator);
+  if (should === tracking) return;
+  tracking = should;
+  if (!should) { if (trackWatch != null) navigator.geolocation.clearWatch(trackWatch); trackWatch = null; return; }
+  trackWatch = navigator.geolocation.watchPosition(async p => {
+    const now = Date.now(), c = p.coords;
+    const moved = lastSent ? distM(lastSent.lat, lastSent.lng, c.latitude, c.longitude) : Infinity;
+    if (lastSent && now - lastSent.t < (rules.trackEverySec || 60) * 1000 && moved < 25) return;
+    let battery = null;
+    try { battery = Math.round((await navigator.getBattery()).level * 100); } catch {}
+    lastSent = { lat: c.latitude, lng: c.longitude, t: now };
+    try { client.setPresence(teamId, { enc: await encryptForAdmin({ lat: c.latitude, lng: c.longitude, acc: Math.round(c.accuracy), battery }) }); } catch (err) { console.warn(err); }
+  }, () => {}, { enableHighAccuracy: true, maximumAge: 20000, timeout: 30000 });
+}
+setInterval(updateTracking, 5000);
+
 // ---------------------------------------------------------------- inicio
 render();
 client = await startClient({
-  onState: s => { state = s; render(); checkNotifications(); },
+  onState: s => { state = s; render(); checkNotifications(); updateTracking(); },
   onStatus: setNet,
 });

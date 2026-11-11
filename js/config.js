@@ -15,6 +15,11 @@ export const GAME = {
   adminPinHash: 'e188c438b68baa91d86a0a176f85802bc6b0a37f1f8efee639212770487f6c76',  // panel de administración
   sombraPinHash: '0f40e4025c73d018ea5430a4126fd54be3c4f14b703c4f4ada88bdb9d5765a65', // modo Sombra (monitores cazadores)
 
+  // Clave para cifrar la ubicación de los equipos: los celulares la cifran con la clave pública
+  // y SOLO el panel de coordinación (con el PIN de admin) puede descifrarla.
+  // ⚠ Está atada al PIN de admin actual: si cambiás ese PIN, hay que regenerar esta clave.
+  presenceKey: {"pub":{"kty":"RSA","n":"zNNLuFHRLMTnVSpz-os1ji0jg5xFEMQg9LXyFhsntNbj0eyO0k7UV4DCtRxaOa_aDr4ZDhqCdpira4fdWsZ4uUL9YMKFuFZYaUZjwj1S2qDE5vAT-3ooU4xkd5xjCb5wrhzTd-8JXWJqD5M4CyLQXpHBv1AIj2Jtz2XlRe6YjL7GN9cO60eJSFBquQHIpaIWLjgl6p0jkMCKlc-U_QX1XuWRKge2LvlgdJusHh9wD6bRatuQAwgvCs-vs7p9GPA_MtR6dDpWNbW5CCzZCeIJuqNiIwRI0NL-LRSkYkWUaGB0YN6f2XlWx2ZEMJ_pNlMNxEfVTYNFx9ffvFyQj0Z2SQ","e":"AQAB","alg":"RSA-OAEP-256","ext":true},"privEnc":"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","salt":"vgDeRUKo+zX0vYJkwZTJPQ==","iv":"ZphqAVelG+Qbj7PH"},
+
   // Contacto que aparece al tocar el botón SOS
   coordinator: { name: 'Coordinación del campamento', phone: '+595 986 629 003' },
 
@@ -53,6 +58,10 @@ export const GAME = {
     captureImmunitySec: 180,     // segundos de inmunidad después de una captura
     interferenceSec: 60,         // segundos seguidos con la pantalla encendida antes de la "interferencia" (0 = desactivado)
     interferenceLockSec: 30,     // segundos que dura el bloqueo por interferencia
+    // Ubicación de equipos (solo la ven los coordinadores en el panel, por seguridad)
+    trackEverySec: 60,           // cada cuánto el celular del Operador avisa dónde está
+    maxDistFromBaseM: 250,       // alerta si un equipo se aleja más que esto del Refugio
+    staleAfterSec: 240,          // alerta si un equipo no reporta ubicación hace más que esto
     // Bandas del radar GPS (metros). El GPS en el monte tiene 10-30 m de error: no achiques demasiado.
     radarBands: [
       { max: 15,       level: 4, label: '¡AQUÍ CERCA!' },
@@ -96,7 +105,7 @@ export const GAME = {
   // El contenido no se imprime en la tarjeta: es sorpresa (los monitores lo ven en el panel).
   // effect: 'refugio' (+amount de un recurso directo al Refugio) · 'puntos' (+amount puntos)
   //         'escudo' (inmune a las Sombras por amount minutos) · 'mapa' (revela una estación secreta)
-  //         'trampa' (¡emboscada! pierden la mitad de la mochila)
+  //         'trampa' (¡emboscada! pierden la mitad de la mochila) · 'bengala' (apaga el radar del equipo líder)
   chests: [
     { id: 'c1', code: 'APG-C-YTYZ8', effect: 'refugio', resource: 'medicina', amount: 3, lugar: 'Detrás de la Fogata, en lo oscuro (a unos 30 m)' },
     { id: 'c2', code: 'APG-C-7VQ6W', effect: 'trampa',                                 lugar: 'Pileta, debajo de una reposera o en una esquina' },
@@ -104,6 +113,8 @@ export const GAME = {
     { id: 'c4', code: 'APG-C-Y8ME5', effect: 'mapa',                                   lugar: 'Galpón detrás del Tanque de Agua' },
     { id: 'c5', code: 'APG-C-4W4WY', effect: 'refugio', resource: 'senal', amount: 3,    lugar: 'Cabaña más lejana del sudeste' },
     { id: 'c6', code: 'APG-C-EQK4N', effect: 'puntos', amount: 40,                      lugar: 'Borde del bosque oeste, junto al camino' },
+    // 'bengala': encandila al equipo que va primero (o al segundo, si el que abre es el primero): su radar no funciona por amount minutos
+    { id: 'c7', code: 'APG-C-HQSPD', effect: 'bengala', amount: 5,                     lugar: 'Entre las cabañas del centro y la Cancha de Vóley' },
   ],
 
   // Misiones de grupo: puestos atendidos por un monitor (página mision.html).
@@ -137,6 +148,13 @@ export const GAME = {
       reto: 'Todo el equipo en ronda, tomados de las manos. Tienen que pasar un aro por todos los cuerpos y que vuelva al inicio SIN soltarse las manos, en menos de 60 segundos.',
       materiales: 'Un aro (hula-hula), cronómetro' },
   ],
+
+  // Reflexión de cierre: se muestra en la Pantalla de la Fogata al final de la premiación. Dejá `texto` vacío para no mostrarla.
+  cierre: {
+    titulo: 'La luz en la oscuridad',
+    texto: 'Esta noche nadie se salvó solo. Hizo falta un equipo, alguien que cuidara la retaguardia, alguien que guiara el camino y una luz que no se apagara. Así también es la vida: no fuimos hechos para caminar a oscuras ni solos.',
+    cita: '"La luz brilla en las tinieblas, y las tinieblas no han podido apagarla." — Juan 1:5',
+  },
 
   // Intro narrada: se reproduce en la Pantalla de la Fogata (botón en el panel de coordinación).
   // La voz la pone el navegador (síntesis de voz en español). Si preferís grabar tu propia voz,

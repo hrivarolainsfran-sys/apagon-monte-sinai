@@ -1,6 +1,7 @@
 import { GAME } from './config.js';
 import { RES, teamById, stationById, resById, total, distM, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, CHESTS, CHEST_EFFECTS, MISSIONS, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
+import { unlockAdminKey, decryptPresence } from './geo.js';
 import { $, esc, hhmm, netText, toast, brandHeader, pinGate, registerSW } from './ui.js';
 
 const rules = GAME.rules;
@@ -95,6 +96,11 @@ document.addEventListener('click', async e => {
   }
   const adj = e.target.closest('[data-adj]');
   if (adj) openAdjust(adj.dataset.adj);
+  if (e.target.closest('#anchorBase') && fix) {
+    if (fix.acc > 25 && !confirm(`La precisión es ±${Math.round(fix.acc)} m (baja). ¿Anclar igual el Refugio?`)) return;
+    const res = await client.send('station_pos', { stationId: 'base', lat: fix.lat, lng: fix.lng, acc: fix.acc });
+    toast(`Refugio: ${res.text}`, res.ok);
+  }
   const anc = e.target.closest('[data-anchor]');
   if (anc && fix) {
     const def = stationById[anc.dataset.anchor];
@@ -171,6 +177,82 @@ $('#gpsBtn').onclick = () => {
   }, err => { $('#gpsInfo').textContent = 'Error GPS: ' + err.message; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
 };
 
+// ---- mapa en vivo de los equipos
+let presence = {}, mapLocked = false;
+document.addEventListener('click', e => {
+  if (!e.target.closest('#relogin')) return;
+  e.preventDefault();
+  for (const k of Object.keys(sessionStorage)) if (k.includes(':admin')) sessionStorage.removeItem(k);
+  location.reload();
+});
+const MAPW = 600, MAPH = 420, PAD = 36;
+function renderMap() {
+  if (!state) return;
+  const now = serverNow();
+  $('#anchorBase').disabled = !fix;
+  // puntos con coordenadas
+  const pts = [];
+  if (state.base) pts.push({ kind: 'base', lat: state.base.lat, lng: state.base.lng });
+  for (const def of GAME.stations) { const st = state.stations[def.id]; if (st.lat != null) pts.push({ kind: 'st', lat: st.lat, lng: st.lng, def }); }
+  for (const t of GAME.teams) { const p = presence[t.id]; if (p?.lat != null) pts.push({ kind: 'team', lat: p.lat, lng: p.lng, t, p }); }
+  const svg = $('#map');
+  if (!pts.length) {
+    svg.innerHTML = `<text x="${MAPW / 2}" y="${MAPH / 2}" text-anchor="middle" fill="#6f7c8d" font-size="15">Todavía no hay ubicaciones. Anclá el Refugio y empezá el juego.</text>`;
+  } else {
+    const lat0 = pts.reduce((a, p) => a + p.lat, 0) / pts.length;
+    const kx = 111320 * Math.cos(lat0 * Math.PI / 180), ky = 110540;
+    const xs = pts.map(p => p.lng * kx), ys = pts.map(p => -p.lat * ky);
+    let minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const span = Math.max(maxX - minX, (maxY - minY) * MAPW / MAPH, 120); // al menos 120 m de ancho
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, sc = (MAPW - 2 * PAD) / span;
+    const X = p => MAPW / 2 + (p.lng * kx - cx) * sc, Y = p => MAPH / 2 + (-p.lat * ky - cy) * sc;
+    let html = '';
+    // escala
+    const scaleM = span > 400 ? 100 : 50;
+    html += `<g opacity=".7"><line x1="${PAD}" y1="${MAPH - 16}" x2="${PAD + scaleM * sc}" y2="${MAPH - 16}" stroke="#6f7c8d" stroke-width="2"/><text x="${PAD}" y="${MAPH - 22}" fill="#6f7c8d" font-size="11">${scaleM} m</text></g>`;
+    // zona permitida alrededor del Refugio
+    if (state.base) html += `<circle cx="${X(state.base)}" cy="${Y(state.base)}" r="${(GAME.rules.maxDistFromBaseM || 250) * sc}" fill="none" stroke="#263243" stroke-dasharray="6 6"/>`;
+    for (const p of pts.filter(p => p.kind === 'st')) {
+      const icon = resById[p.def.resource].icon;
+      html += `<g><circle cx="${X(p)}" cy="${Y(p)}" r="5" fill="#263243"/><text x="${X(p) + 7}" y="${Y(p) + 4}" font-size="11" fill="#6f7c8d">${icon} ${esc(p.def.name)}</text></g>`;
+    }
+    if (state.base) html += `<g><circle cx="${X(state.base)}" cy="${Y(state.base)}" r="10" fill="#ffb238" opacity=".25"/><text x="${X(state.base)}" y="${Y(state.base) + 5}" text-anchor="middle" font-size="16">🔥</text></g>`;
+    for (const p of pts.filter(p => p.kind === 'team')) {
+      const age = (now - p.p.ts) / 1000, stale = age > (GAME.rules.staleAfterSec || 240);
+      html += `<g opacity="${stale ? .45 : 1}"><circle cx="${X(p)}" cy="${Y(p)}" r="${Math.max(9, Math.min(40, (p.p.acc || 10) * sc))}" fill="${p.t.color}" opacity=".15"/>
+        <circle cx="${X(p)}" cy="${Y(p)}" r="9" fill="${p.t.color}" stroke="#05070b" stroke-width="2"/>
+        <text x="${X(p)}" y="${Y(p) - 14}" text-anchor="middle" font-size="13" font-weight="700" fill="${p.t.color}">${esc(p.t.name)}</text></g>`;
+    }
+    svg.innerHTML = html;
+  }
+  // lista de equipos + alertas
+  const alerts = [];
+  $('#mapTeams').innerHTML = GAME.teams.map(t => {
+    const p = presence[t.id];
+    if (!p?.lat) return `<div class="muted" style="padding:4px 0"><span class="dot" style="background:${t.color}"></span>${esc(t.name)}: sin ubicación todavía</div>`;
+    const age = Math.max(0, (now - p.ts) / 1000);
+    const dist = state.base ? Math.round(distM(state.base.lat, state.base.lng, p.lat, p.lng)) : null;
+    if (effectiveStatus(state, now) === 'running') {
+      if (age > (GAME.rules.staleAfterSec || 240)) alerts.push(`⏱ <b>${esc(t.name)}</b> no reporta ubicación hace ${fmtSec(age)} (¿sin señal o celular apagado?)`);
+      if (dist != null && dist > (GAME.rules.maxDistFromBaseM || 250)) alerts.push(`🚧 <b>${esc(t.name)}</b> está a ${dist} m del Refugio: fuera de la zona de juego`);
+      if (p.battery != null && p.battery < 15) alerts.push(`🔋 <b>${esc(t.name)}</b>: batería del Operador en ${p.battery}%`);
+    }
+    return `<div style="padding:5px 0;border-bottom:1px solid var(--line)"><span class="dot" style="background:${t.color}"></span><b>${esc(t.name)}</b>
+      <span class="muted"> · hace ${fmtSec(age)}${dist != null ? ` · a ${dist} m del Refugio` : ''} · ±${p.acc ?? '?'} m${p.battery != null ? ` · 🔋${p.battery}%` : ''}</span>
+      <a href="https://www.google.com/maps?q=${p.lat},${p.lng}" target="_blank" style="float:right">Abrir en Google Maps</a></div>`;
+  }).join('');
+  $('#mapAlerts').innerHTML = alerts.map(a => `<div style="padding:8px 10px;margin-bottom:6px;border-radius:10px;border:1px solid var(--bad);background:rgba(255,90,78,.1)">${a}</div>`).join('');
+  $('#mapInfo').innerHTML = mapLocked ? '🔒 <a href="#" id="relogin">Ingresá el PIN de nuevo para ver ubicaciones</a>' : alerts.length ? `⚠ ${alerts.length}` : '';
+}
+setInterval(renderMap, 3000);
+
+// ---- premiación
+$('#ceremonySend').onclick = async () => {
+  if (!confirm('¿Mostrar la premiación en la Pantalla de la Fogata? Conviene hacerlo con el juego terminado y todos los equipos en la Fogata.')) return;
+  const res = await client.send('ceremony');
+  toast(res.text, res.ok);
+};
+
 // ---- intro narrada
 $('#introSend').onclick = async () => {
   if (!confirm('¿Reproducir la intro narrada en la Pantalla de la Fogata? (Asegurate de haber tocado "Activar sonido" en la pantalla.) Al terminar, tocá ▶ Iniciar.')) return;
@@ -203,6 +285,18 @@ document.querySelectorAll('[data-cd]').forEach(b => b.onclick = async () => {
 
 setInterval(render, 1000); // refresca inmunidades y relojes
 
-pinGate([GAME.adminPinHash], 'admin', async () => {
-  client = await startClient({ onState: s => { state = s; render(); }, onStatus: st => { $('#net').textContent = netText(st); } });
+pinGate([GAME.adminPinHash], 'admin', async pin => {
+  client = await startClient({ onState: s => { state = s; render(); renderMap(); }, onStatus: st => { $('#net').textContent = netText(st); } });
+  // Las ubicaciones llegan cifradas: se descifran con la clave que abre el PIN de admin
+  let privKey = null;
+  try { privKey = pin ? await unlockAdminKey(pin) : null; } catch (err) { console.warn(err); }
+  mapLocked = !privKey; renderMap();
+  client.onPresence(async raw => {
+    if (!privKey) return;
+    const out = {};
+    for (const [id, d] of Object.entries(raw || {})) {
+      try { out[id] = { ...(await decryptPresence(privKey, d.enc)), ts: d.ts }; } catch {}
+    }
+    presence = out; renderMap();
+  });
 });

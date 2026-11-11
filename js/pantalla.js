@@ -98,6 +98,7 @@ function tickerText(f) {
     case 'special': { const d = SPECIALS[f.special]; const st = f.stationId && stationById[f.stationId]; return d ? `${d.icon} ${d.name}${st ? ' en ' + esc(lugarCorto(st)) : ''}` : ''; }
     case 'chest': return { refugio: `🎁 ${tn(f.teamId)} abrió un cofre: +${f.amount} ${RES.find(r => r.id === f.resource)?.icon || ''}`, puntos: `⭐ ${tn(f.teamId)} encontró un tesoro (+${f.amount} pts)`, escudo: `🛡 ${tn(f.teamId)} consiguió un escudo`, mapa: `📜 ${tn(f.teamId)} encontró un mapa del tesoro`, trampa: `💥 ${tn(f.teamId)} cayó en una trampa` }[f.effect] || '';
     case 'mission': { const m = missionById[f.missionId]; return m ? `💪 ${tn(f.teamId)} superó "${esc(m.name)}" (${esc(rewardText(m.reward))})` : ''; }
+    case 'trade': return `🤝 Trueque entre ${tn(f.teamA)} y ${tn(f.teamB)}`;
     case 'countdown': return f.minutes ? `⏰ ¡Quedan ${f.minutes} minutos!` : '';
     case 'state': return { running: '▶ El Apagón está en marcha', paused: '⏸ Pausa', ended: '🏁 Fin del juego', lobby: '⏳ En espera' }[f.status];
     default: return '';
@@ -152,7 +153,8 @@ function collectAnnouncements() {
       const a = {
         refugio: { cls: 'faro', ic: '🎁', t1: `¡${n} ABRIÓ UN COFRE!`, t2: `Envío de emergencia: +${f.amount} ${RES.find(r => r.id === f.resource)?.icon || ''} directo al Refugio`, sound: 'faro' },
         puntos:  { cls: 'faro', ic: '⭐', t1: `¡${n} ENCONTRÓ UN TESORO!`, t2: `+${f.amount} puntos`, sound: 'faro' },
-        escudo:  { cls: 'special', ic: '🛡', t1: `¡${n} TIENE ESCUDO!`, t2: `Las Sombras no los pueden atrapar por ${f.amount} minutos`, sound: 'msg' },
+        bengala: { cls: 'capture', ic: '🎆', t1: `¡${n} LANZÓ UNA BENGALA!`, t2: f.target ? `${teamById[f.target]?.name || ''} queda con el radar encandilado ${f.amount} min` : 'Se apagó sola', sound: 'capture', shake: f.target || null },
+      escudo:  { cls: 'special', ic: '🛡', t1: `¡${n} TIENE ESCUDO!`, t2: `Las Sombras no los pueden atrapar por ${f.amount} minutos`, sound: 'msg' },
         mapa:    { cls: 'special', ic: '📜', t1: `¡${n} ENCONTRÓ UN MAPA!`, t2: 'Ahora saben dónde hay una estación secreta…', sound: 'msg' },
         trampa:  { cls: 'capture', ic: '💥', t1: `¡${n} CAYÓ EN UNA TRAMPA!`, t2: f.lost && total(f.lost) ? `Pierde ${resTxt(f.lost)} de la mochila` : 'Por suerte tenía la mochila vacía', sound: 'capture', shake: f.teamId },
       }[f.effect];
@@ -164,6 +166,11 @@ function collectAnnouncements() {
       if (f.faroPos != null) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${t.name.toUpperCase()} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
     } else if (f.kind === 'countdown' && f.minutes > 0) {
       queue.push({ cls: 'faro', ic: '⏰', t1: `¡QUEDAN ${f.minutes} MINUTOS!`, t2: 'Lo que no esté en el Refugio cuando llegue a cero, se pierde', sound: 'faro' });
+    } else if (f.kind === 'trade') {
+      queue.push({ cls: 'special', ic: '🤝', t1: '¡TRUEQUE EN EL REFUGIO!', t2: `${teamById[f.teamA]?.name} da ${resTxt(f.giveA) || 'nada'} · ${teamById[f.teamB]?.name} da ${resTxt(f.giveB) || 'nada'}`, sound: 'msg' });
+      for (const l of f.lit || []) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${teamById[l.id].name.toUpperCase()} ENCENDIÓ EL FARO!`, t2: `${l.pos + 1}° equipo en pedir rescate · +${rules.faroBonus[l.pos] || 0} pts`, sound: 'faro' });
+    } else if (f.kind === 'ceremony') {
+      playCeremony();
     } else if (f.kind === 'intro') {
       playIntro();
     } else if (f.kind === 'state' && (f.status === 'running' || f.status === 'ended')) {
@@ -246,6 +253,85 @@ function startAmbience() {
   return { stop() { clearInterval(beat); try { g.gain.linearRampToValueAtTime(0, audio.currentTime + 1); setTimeout(() => src.stop(), 1100); } catch {} } };
 }
 $('#introBtn').onclick = () => playIntro();
+
+// ---------------------------------------------------------------- premiación + reflexión de cierre
+let cerRunning = false;
+function awardsList() {
+  const T = GAME.teams.map(t => ({ t, s: state.teams[t.id] }));
+  const best = (fn, min = 1) => {
+    const v = Math.max(...T.map(x => fn(x.s)));
+    return v >= min ? { v, names: T.filter(x => fn(x.s) === v).map(x => x.t) } : null;
+  };
+  const join = ts => ts.map(t => `<span style="color:${t.color}">${esc(t.name)}</span>`).join(' y ');
+  const list = [];
+  const first = T.find(x => x.s.faroPos === 0);
+  if (first) list.push({ ic: '🔥', name: join([first.t]), why: 'Primer equipo en encender el Faro de Rescate' });
+  const mi = best(s => Object.keys(s.missions || {}).length);
+  if (mi) list.push({ ic: '💪', name: join(mi.names), why: `Más misiones superadas (${mi.v})` });
+  const sc = best(s => s.scans);
+  if (sc) list.push({ ic: '🎒', name: join(sc.names), why: `Más recursos saqueados (${sc.v} ${sc.v === 1 ? 'saqueo' : 'saqueos'})` });
+  const tr = best(s => s.trades || 0);
+  if (tr) list.push({ ic: '🤝', name: join(tr.names), why: `Mejores negociadores (${tr.v} ${tr.v === 1 ? 'trueque' : 'trueques'})` });
+  const ca = best(s => s.captures);
+  if (ca) list.push({ ic: '🦁', name: join(ca.names), why: `Los más valientes: los iluminaron ${ca.v} ${ca.v === 1 ? 'vez' : 'veces'} y siguieron` });
+  const sh = Object.entries(state.shadows || {}).sort((a, b) => b[1] - a[1])[0];
+  if (sh) list.push({ ic: '🌑', name: esc(sh[0]), why: `Mejor Sombra de la noche (${sh[1]} ${sh[1] === 1 ? 'captura' : 'capturas'})` });
+  return list;
+}
+async function playCeremony() {
+  if (!state || cerRunning) return;
+  cerRunning = true;
+  document.querySelector('.announce')?.remove();
+  const ov = document.createElement('div');
+  ov.className = 'cer';
+  ov.innerHTML = '<button class="sm close">Cerrar ✕</button><div class="stage"></div>';
+  document.body.append(ov);
+  const stage = ov.querySelector('.stage');
+  let stop = false;
+  const pending = new Set();
+  const wait = ms => new Promise(r => { const t = setTimeout(done, ms); function done() { clearTimeout(t); pending.delete(done); r(); } pending.add(done); });
+  const finish = () => { stop = true; [...pending].forEach(f => f()); };
+  ov.querySelector('.close').onclick = finish;
+  const show = html => { stage.innerHTML = `<div class="fade">${html}</div>`; };
+
+  show('<div class="kicker">Campamento Monte Sinaí</div><div class="big">🏆 PREMIACIÓN</div>');
+  play('faro'); await wait(3500);
+  for (const a of awardsList()) {
+    if (stop) break;
+    show(`<div class="award"><div class="ic">${a.ic}</div><div class="name">${a.name}</div><div class="why">${a.why}</div></div>`);
+    play('msg'); await wait(5000);
+  }
+  if (!stop) {
+    // podio 3° → 2° → 1°
+    const rk = state.ranking.slice(0, 3);
+    const order = [1, 0, 2].filter(i => rk[i]); // izquierda 2°, centro 1°, derecha 3°
+    const H = { 0: 52, 1: 38, 2: 28 };
+    stage.innerHTML = `<div class="kicker" style="margin-bottom:2vh">Posiciones finales</div><div class="podium">${order.map(i => {
+      const t = teamById[rk[i].teamId];
+      return `<div class="col" data-i="${i}"><div class="tn" style="color:${t.color}">${esc(t.name)}</div><div class="pts">${rk[i].score} pts${state.teams[t.id].faroPos != null ? ' · 🔥' : ''}</div>
+        <div class="block" style="height:${H[i]}vh;background:${t.color}">${i + 1}°</div></div>`;
+    }).join('')}</div>`;
+    for (const i of [2, 1, 0]) {
+      if (stop || !rk[i]) continue;
+      await wait(i === 0 ? 2600 : 1600);
+      if (i === 0) [0, .12, .24, .36, .48, .6, .72].forEach(d => audio && tone(180 + Math.random() * 40, d, .1, 'square', .08)); // redoble
+      if (i === 0) await wait(900);
+      stage.querySelector(`.col[data-i="${i}"]`)?.classList.add('on');
+      play(i === 0 ? 'faro' : 'msg');
+    }
+    await wait(7000);
+  }
+  const c = GAME.cierre;
+  if (!stop && c?.texto) {
+    show(`<div class="refl"><div class="t">${esc(c.titulo || '')}</div><div class="x">${esc(c.texto)}</div>${c.cita ? `<div class="c">${esc(c.cita)}</div>` : ''}</div>`);
+    if (audio && canSpeak()) { await speak(c.texto); if (c.cita && !stop) await speak(c.cita.replace(/[—"]/g, ' ')); }
+    // La reflexión queda en pantalla hasta que alguien toque "Cerrar" (para poder hablarle al grupo)
+    if (!stop) await new Promise(r => pending.add(r));
+  }
+  stopSpeaking(); ov.remove(); cerRunning = false;
+  if (!showing) nextAnnouncement();
+}
+$('#ceremonyBtn').onclick = () => playCeremony();
 
 // ---------------------------------------------------------------- sonido (requiere un clic para activarse)
 let audio = null;
