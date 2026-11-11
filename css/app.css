@@ -191,8 +191,9 @@ th { color: var(--dim); font-weight: 600; font-size: .75rem; text-transform: upp
 .feed { max-height: 360px; overflow-y: auto; font-size: .88rem; }
 .feed div { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .feed time { color: var(--dim); margin-right: 6px; font-variant-numeric: tabular-nums; }
-.admin-grid { display: grid; grid-template-columns: 1fr; gap: 0 14px; }
-@media (min-width: 900px) { .admin-grid { grid-template-columns: 3fr 2fr; } }
+.admin-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0 14px; }
+.admin-grid > div { min-width: 0; }
+@media (min-width: 900px) { .admin-grid { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); } }
 dialog { background: var(--panel); color: var(--text); border: 1px solid var(--line2); border-radius: var(--radius); max-width: 360px; width: calc(100% - 32px); }
 dialog::backdrop { background: rgba(0, 0, 0, .75); }
 dialog form > * { margin: 6px 0; }
