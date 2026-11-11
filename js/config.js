@@ -16,7 +16,7 @@ export const GAME = {
   sombraPinHash: '0f40e4025c73d018ea5430a4126fd54be3c4f14b703c4f4ada88bdb9d5765a65', // modo Sombra (monitores cazadores)
 
   // Contacto que aparece al tocar el botón SOS
-  coordinator: { name: 'Coordinación del campamento', phone: '+595 981 000000' },
+  coordinator: { name: 'Coordinación del campamento', phone: '+595 986 629 003' },
 
   // URL pública donde va a quedar alojada la app (para el QR de inicio).
   // Si la dejás vacía se usa la dirección desde donde abrís imprimir.html.
