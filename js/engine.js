@@ -264,6 +264,8 @@ function apply(s, e, rules) {
       const txt = `💪 ${tname} completó "${m.name}": ${rewardText(rw)}${lit}`;
       return ok(txt, txt, {}, { kind: 'mission', missionId: m.id, faroPos: lit ? team.faroPos : null });
     }
+    case 'intro':
+      return ok('Intro en marcha en la Fogata', '🎬 Comienza la intro del Apagón', {}, { kind: 'intro' });
     case 'special': {
       if (!SPECIALS[e.kind]) return no('Evento especial desconocido.');
       if (e.kind === 'suministros' && !stationById[e.stationId]) return no('Elegí una estación.');

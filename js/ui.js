@@ -62,3 +62,33 @@ export function pinGate(hashes, key, onOk) {
     else { ov.querySelector('[data-m]').textContent = 'PIN incorrecto'; input.value = ''; }
   });
 }
+
+// ---------------------------------------------------------------- narración (síntesis de voz del navegador)
+let cachedVoice;
+function pickVoice() {
+  if (cachedVoice !== undefined) return cachedVoice;
+  const vs = (window.speechSynthesis?.getVoices() || []).filter(v => v.lang?.toLowerCase().startsWith('es'));
+  // Preferir español latinoamericano
+  const pref = ['es-419', 'es-mx', 'es-us', 'es-ar', 'es-co', 'es-py', 'es-es'];
+  vs.sort((a, b) => {
+    const ia = pref.indexOf(a.lang.toLowerCase()), ib = pref.indexOf(b.lang.toLowerCase());
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  cachedVoice = vs[0] || null;
+  return cachedVoice;
+}
+if ('speechSynthesis' in window) speechSynthesis.onvoiceschanged = () => { cachedVoice = undefined; };
+export const canSpeak = () => 'speechSynthesis' in window;
+export function stopSpeaking() { try { speechSynthesis.cancel(); } catch {} }
+// Lee un texto en voz alta; resuelve cuando termina (o tras un máximo, por si el navegador no avisa).
+export function speak(text, { rate = .92, pitch = .85 } = {}) {
+  return new Promise(res => {
+    if (!canSpeak()) return res(false);
+    const u = new SpeechSynthesisUtterance(text);
+    const v = pickVoice(); if (v) u.voice = v;
+    u.lang = v?.lang || 'es-419'; u.rate = rate; u.pitch = pitch;
+    const t = setTimeout(() => res(true), 2500 + text.length * 110);
+    u.onend = u.onerror = () => { clearTimeout(t); res(true); };
+    speechSynthesis.speak(u);
+  });
+}

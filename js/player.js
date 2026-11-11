@@ -2,7 +2,7 @@ import { GAME } from './config.js';
 import { RES, teamById, stationById, resById, findByCode, total, fmtRes, fmtSec, distM, cooldownMs, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, isActive, specialText, lugarCorto, MISSIONS, missionById, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
 import { openScanner, closeScanner, isScannerOpen } from './scanner.js';
-import { $, esc, ls, vibrate, netText, brandHeader, registerSW } from './ui.js';
+import { $, esc, ls, vibrate, netText, brandHeader, registerSW, speak, stopSpeaking, canSpeak } from './ui.js';
 
 const rules = GAME.rules;
 let client = null;
@@ -156,6 +156,22 @@ async function handleCode(raw) {
 $('#scanBtn').onclick = () => {
   if (isLocked()) return;
   openScanner({ title: 'Escaneá una estación o el Refugio', onCode: handleCode });
+};
+
+// ---------------------------------------------------------------- historia (para quien se perdió la intro)
+const introLines = GAME.intro?.lines || [];
+$('#story').innerHTML = introLines.map(l => `<p style="margin:0 0 8px">${esc(l.texto)}</p>`).join('');
+if (!introLines.length) $('#storyCard').classList.add('hidden');
+// Abierta mientras se espera el inicio
+if (ls.get('storySeen') == null) $('#storyCard').open = true;
+$('#storyCard').addEventListener('toggle', () => ls.set('storySeen', '1'));
+let reading = false;
+$('#storyBtn').onclick = async () => {
+  if (!canSpeak()) { $('#storyBtn').textContent = 'Este celular no puede leer en voz alta'; return; }
+  if (reading) { reading = false; stopSpeaking(); $('#storyBtn').textContent = '🔊 Escuchar'; return; }
+  reading = true; $('#storyBtn').textContent = '⏹ Detener';
+  for (const l of introLines) { if (!reading) break; await speak(l.texto); }
+  reading = false; $('#storyBtn').textContent = '🔊 Escuchar';
 };
 
 // ---------------------------------------------------------------- SOS

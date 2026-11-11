@@ -137,4 +137,23 @@ export const GAME = {
       reto: 'Todo el equipo en ronda, tomados de las manos. Tienen que pasar un aro por todos los cuerpos y que vuelva al inicio SIN soltarse las manos, en menos de 60 segundos.',
       materiales: 'Un aro (hula-hula), cronómetro' },
   ],
+
+  // Intro narrada: se reproduce en la Pantalla de la Fogata (botón en el panel de coordinación).
+  // La voz la pone el navegador (síntesis de voz en español). Si preferís grabar tu propia voz,
+  // subí un archivo de audio a la carpeta y poné su nombre en `audio` (ej. 'intro.mp3'):
+  // entonces suena tu grabación y los textos van apareciendo al ritmo de `segundos`.
+  intro: {
+    audio: '',
+    lines: [
+      { texto: 'Campamento Monte Sinaí. Veintiuna horas.', segundos: 5 },
+      { texto: 'Hace una hora, una tormenta cortó la luz en toda la región. Las radios se callaron. Los caminos quedaron a oscuras.', segundos: 9 },
+      { texto: 'No sabemos cuánto va a durar el apagón. Pero sí sabemos algo: no estamos solos.', segundos: 7 },
+      { texto: 'En el monte se mueven las Sombras. No hacen ruido. Buscan la luz. Si los iluminan, se llevan lo que cargan.', segundos: 9 },
+      { texto: 'Para pedir rescate hay que encender el Faro: agua, energía, medicina y señal. Siete de cada uno.', segundos: 8 },
+      { texto: 'Los recursos están escondidos por todo el campamento. El radar de sus celulares los va a guiar… mientras haya señal.', segundos: 8 },
+      { texto: 'Esta Fogata es el Refugio. Todo lo que traigan hasta aquí, está a salvo.', segundos: 6 },
+      { texto: 'Nadie camina solo. Caminen, no corran. Cuiden a su equipo.', segundos: 6 },
+      { texto: 'Equipos Rojo, Azul, Verde y Amarillo… el Apagón comienza ahora.', segundos: 6 },
+    ],
+  },
 };

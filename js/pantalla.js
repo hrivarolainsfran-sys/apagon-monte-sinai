@@ -4,7 +4,7 @@
 import { GAME } from './config.js';
 import { RES, teamById, stationById, total, fmtSec, STATUS_TEXT, SPECIALS, activeSpecials, effectiveStatus, lugarCorto, missionById, rewardText } from './engine.js';
 import { startClient, serverNow } from './backend.js';
-import { $, esc, netText, registerSW } from './ui.js';
+import { $, esc, netText, registerSW, speak, stopSpeaking, canSpeak } from './ui.js';
 
 const rules = GAME.rules;
 const goalTotal = RES.reduce((a, r) => a + (rules.faroGoal[r.id] || 0), 0);
@@ -164,6 +164,8 @@ function collectAnnouncements() {
       if (f.faroPos != null) queue.push({ cls: 'faro', ic: '🔥', t1: `¡${t.name.toUpperCase()} ENCENDIÓ EL FARO!`, t2: `${f.faroPos + 1}° equipo en pedir rescate · +${rules.faroBonus[f.faroPos] || 0} pts`, sound: 'faro' });
     } else if (f.kind === 'countdown' && f.minutes > 0) {
       queue.push({ cls: 'faro', ic: '⏰', t1: `¡QUEDAN ${f.minutes} MINUTOS!`, t2: 'Lo que no esté en el Refugio cuando llegue a cero, se pierde', sound: 'faro' });
+    } else if (f.kind === 'intro') {
+      playIntro();
     } else if (f.kind === 'state' && (f.status === 'running' || f.status === 'ended')) {
       queue.push(f.status === 'running'
         ? { cls: 'faro', ic: '🌑', t1: '¡COMIENZA EL APAGÓN!', t2: 'Junten recursos y vuelvan a la Fogata', sound: 'faro' }
@@ -186,6 +188,64 @@ function nextAnnouncement() {
   play(a.sound);
   setTimeout(nextAnnouncement, a.cls === 'msg' ? 7000 : 5500);
 }
+
+// ---------------------------------------------------------------- intro narrada
+let introRunning = false;
+async function playIntro() {
+  const cfg = GAME.intro;
+  if (!cfg?.lines?.length || introRunning) return;
+  introRunning = true;
+  document.querySelector('.announce')?.remove();
+  const ov = document.createElement('div');
+  ov.className = 'intro';
+  ov.innerHTML = `<button class="sm skip">Saltar ✕</button><div class="line"></div><div class="dots">${cfg.lines.map(() => '<i></i>').join('')}</div>`;
+  document.body.append(ov);
+  let stop = false;
+  const pending = new Set();
+  // espera que se corta al instante si tocan "Saltar"
+  const wait = ms => new Promise(r => { const t = setTimeout(done, ms); function done() { clearTimeout(t); pending.delete(done); r(); } pending.add(done); });
+  ov.querySelector('.skip').onclick = () => { stop = true; stopSpeaking(); [...pending].forEach(f => f()); };
+  const ambience = startAmbience();
+  let rec = null;
+  if (cfg.audio) { rec = new Audio(cfg.audio); rec.play().catch(() => { rec = null; }); }
+  const useVoice = !rec && audio && canSpeak();
+  const lineEl = ov.querySelector('.line'), dots = [...ov.querySelectorAll('.dots i')];
+  await wait(1200);
+  for (let i = 0; i < cfg.lines.length && !stop; i++) {
+    const l = cfg.lines[i];
+    lineEl.classList.remove('on'); await wait(500);
+    lineEl.textContent = l.texto; lineEl.classList.toggle('first', i === 0); lineEl.classList.add('on');
+    dots.forEach((d, j) => d.classList.toggle('on', j <= i));
+    const min = (l.segundos || Math.max(4, l.texto.length * .075)) * 1000;
+    if (useVoice) await Promise.race([Promise.all([speak(l.texto), wait(Math.min(min, 3000))]), new Promise(r => pending.add(r))]);
+    else await wait(min);
+    await wait(500);
+  }
+  lineEl.classList.remove('on'); await wait(stop ? 0 : 800);
+  if (!stop) {
+    lineEl.remove();
+    const t = document.createElement('div'); t.className = 'title'; t.textContent = 'APAGÓN'; ov.append(t);
+    requestAnimationFrame(() => t.classList.add('on'));
+    play('faro');
+    await wait(3500);
+  }
+  rec?.pause(); ambience?.stop(); stopSpeaking();
+  ov.remove(); introRunning = false;
+  if (!showing) nextAnnouncement();
+}
+// Ambiente: viento grave + latido, solo si el sonido está activado
+function startAmbience() {
+  if (!audio) return null;
+  const len = audio.sampleRate * 2, buf = audio.createBuffer(1, len, audio.sampleRate), d = buf.getChannelData(0);
+  let last = 0; for (let i = 0; i < len; i++) { const w = Math.random() * 2 - 1; last = (last + .02 * w) / 1.02; d[i] = last * 3.5; }
+  const src = audio.createBufferSource(); src.buffer = buf; src.loop = true;
+  const lp = audio.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 420;
+  const g = audio.createGain(); g.gain.value = 0; g.gain.linearRampToValueAtTime(.35, audio.currentTime + 3);
+  src.connect(lp).connect(g).connect(audio.destination); src.start();
+  const beat = setInterval(() => { tone(55, 0, .35, 'sine', .35); tone(52, .28, .4, 'sine', .25); }, 1600);
+  return { stop() { clearInterval(beat); try { g.gain.linearRampToValueAtTime(0, audio.currentTime + 1); setTimeout(() => src.stop(), 1100); } catch {} } };
+}
+$('#introBtn').onclick = () => playIntro();
 
 // ---------------------------------------------------------------- sonido (requiere un clic para activarse)
 let audio = null;

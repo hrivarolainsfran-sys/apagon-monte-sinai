@@ -171,6 +171,13 @@ $('#gpsBtn').onclick = () => {
   }, err => { $('#gpsInfo').textContent = 'Error GPS: ' + err.message; }, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
 };
 
+// ---- intro narrada
+$('#introSend').onclick = async () => {
+  if (!confirm('¿Reproducir la intro narrada en la Pantalla de la Fogata? (Asegurate de haber tocado "Activar sonido" en la pantalla.) Al terminar, tocá ▶ Iniciar.')) return;
+  const res = await client.send('intro');
+  toast(res.text, res.ok);
+};
+
 // ---- eventos especiales
 $('#spStation').innerHTML = GAME.stations.map(st => `<option value="${st.id}">${resById[st.resource].icon} ${esc(st.name)}${st.lugar ? ' — ' + esc(st.lugar) : ''}</option>`).join('');
 document.querySelectorAll('[data-sp]').forEach(b => b.onclick = async () => {
