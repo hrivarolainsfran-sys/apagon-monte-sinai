@@ -67,6 +67,11 @@ Las fichas con el reto y los materiales se imprimen en la sección 5 de la hoja 
 
 Se cambian en `missions` de `js/config.js`.
 
+## Intro narrada
+Con todos reunidos en la Fogata: en la pantalla tocá **🔇 Activar sonido**, y desde el panel tocá **🎬 Reproducir la intro** (≈ 70 s, con voz, ambiente y el título APAGÓN al final). Después, **▶ Iniciar**.
+La pantalla también tiene un botón **🎬 Ver intro** para ensayar. Los chicos pueden releer la historia en su celular ("📜 La historia del Apagón").
+El texto se cambia en `intro` de `js/config.js`. Para usar tu propia voz grabada, subí el audio a la carpeta y poné su nombre en `intro.audio`.
+
 ## Cómo se juega (para explicar a los chicos)
 - Juntan 💧 Agua, ⚡ Energía, ✚ Medicina y 📡 Señal escaneando estaciones escondidas.
 - La mochila aguanta **6**. Hay que volver al **Refugio** y escanear su QR para asegurar lo que llevan.
