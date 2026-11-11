@@ -38,6 +38,19 @@ Para agregar un logo, poné la imagen en esta carpeta y escribí su nombre en `b
 Todos avisan a los celulares y salen en grande en la Pantalla de la Fogata. Se pueden terminar antes con "Terminar".
 Para practicar sin tocar la partida real, agregá `?demo` al final de cualquier dirección.
 
+## Cofres sorpresa
+6 QR de un solo uso (sección 3 de la hoja de impresión). El primer equipo que escanea uno se queda con el contenido; los demás ven "llegaron tarde". El contenido es secreto (en el panel se ve cuál es cuál):
+
+| Cofre | Contenido |
+|---|---|
+| 🎁 Envío al Refugio | +3 de un recurso directo al Refugio (ya a salvo) |
+| ⭐ Tesoro | +40 puntos |
+| 🛡 Escudo | Las Sombras no los pueden atrapar por 5 minutos |
+| 📜 Mapa del tesoro | Les revela dónde hay una estación secreta |
+| 💥 Trampa | ¡Emboscada! Pierden la mitad de la mochila |
+
+Se cambian en `chests` de `js/config.js`.
+
 ## Cómo se juega (para explicar a los chicos)
 - Juntan 💧 Agua, ⚡ Energía, ✚ Medicina y 📡 Señal escaneando estaciones escondidas.
 - La mochila aguanta **6**. Hay que volver al **Refugio** y escanear su QR para asegurar lo que llevan.

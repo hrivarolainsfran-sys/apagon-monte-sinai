@@ -81,7 +81,16 @@
     }
     html += `</div>`;
 
-    html += `<h2 class="section">3 · Tarjetas de equipo (las lleva el Portador)</h2><div class="grid">`;
+    if ((GAME.chests || []).length) {
+      html += `<h2 class="section">3 · Cofres sorpresa (un solo uso)</h2><div class="grid">`;
+      for (const c of GAME.chests) {
+        html += card({ title: '🎁 COFRE SORPRESA', sub: 'El primer equipo que lo escanea se queda con lo que hay adentro… ¿o es una trampa?', code: c.code,
+          extra: `<div class="where">📍 Esconder en: <b>${esc(c.lugar || '______________________________')}</b> · ${esc(c.id.toUpperCase())}</div>` });
+      }
+      html += `</div>`;
+    }
+
+    html += `<h2 class="section">4 · Tarjetas de equipo (las lleva el Portador)</h2><div class="grid">`;
     for (const t of GAME.teams) {
       html += card({ title: esc(t.name), sub: 'Tarjeta de equipo · ¡que no la atrapen las Sombras!', code: t.code, cls: 'team', style: `border-color:${t.color}` });
     }
