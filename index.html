@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0d0805">
+  <meta name="theme-color" content="#05070b">
   <title>APAGÓN · Juego Nocturno</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
   <link rel="stylesheet" href="css/app.css">
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -20,7 +20,10 @@
       <div class="net" id="net">…</div>
     </div>
   </div>
-  <h1 style="text-align:center;font-size:2.3rem;margin-top:8px">APAGÓN</h1>
+  <div class="title">
+    <h1>APAGÓN</h1>
+    <div class="sub">Sobrevivan hasta el rescate</div>
+  </div>
 
   <!-- Unirse a un equipo -->
   <section id="join" class="card hidden">
@@ -40,21 +43,59 @@
 
     <div class="card">
       <h3>🎒 Mochila <span class="muted" id="carryCount"></span></h3>
-      <div class="grid4" id="carry"></div>
-      <p class="muted" style="margin:8px 0 0">Llévenla al <b>Refugio</b> y escaneen el QR de la base para asegurarla. Si una Sombra los ilumina, pierden la mitad.</p>
+      <div class="slots" id="carry"></div>
+      <div class="legend" id="carryLegend"></div>
+      <p class="muted" style="margin:10px 0 0;font-size:.8rem">Llévenla a la <b>Fogata (Refugio)</b> y escaneen su QR para asegurarla. Si una Sombra los ilumina, pierden la mitad.</p>
     </div>
 
     <div class="card">
-      <h3>🔥 Refugio · Faro de Rescate</h3>
-      <div class="grid4" id="bank"></div>
-      <p id="faro" style="margin:10px 0 0;text-align:center"></p>
+      <h3>🔥 Faro de Rescate</h3>
+      <div class="faro-wrap">
+        <div class="flame" id="flame">
+          <svg viewBox="0 0 100 120" aria-hidden="true">
+            <defs>
+              <radialGradient id="fg" cx="50%" cy="75%" r="65%">
+                <stop offset="0" stop-color="#fff3c4"/><stop offset=".35" stop-color="#ffc84a"/><stop offset=".75" stop-color="#ff7a1f"/><stop offset="1" stop-color="#d9381e"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="50" cy="112" rx="34" ry="6" fill="#1a2330"/>
+            <path d="M30 110 L70 98 M30 98 L70 110" stroke="#5a3a22" stroke-width="7" stroke-linecap="round"/>
+            <g class="fire">
+              <path fill="url(#fg)" d="M50 6 C58 26 76 38 76 66 C76 88 64 104 50 104 C36 104 24 88 24 66 C24 50 34 42 38 30 C42 44 46 48 50 50 C48 36 46 22 50 6 Z"/>
+              <path fill="#fff3c4" opacity=".75" d="M50 56 C56 66 62 72 62 84 C62 96 56 102 50 102 C44 102 38 96 38 86 C38 76 46 70 50 56 Z"/>
+            </g>
+          </svg>
+        </div>
+        <div>
+          <div class="faro-pct" id="faroPct">0%</div>
+          <div class="muted" style="font-size:.8rem;margin-bottom:6px">recursos asegurados</div>
+          <div id="bank"></div>
+        </div>
+      </div>
+      <p class="faro-msg" id="faro"></p>
     </div>
 
     <div class="card" id="radarCard">
       <h3>📡 Radar</h3>
-      <div class="radar-label" id="radarLabel">APAGADO</div>
-      <div class="radar-rings" id="radarRings"><i></i><i></i><i></i><i></i></div>
-      <p class="muted" id="radarInfo" style="text-align:center;margin:0 0 10px">Detecta la estación activa más cercana. El GPS en el monte falla por 10–30 m: usalo para orientarte y buscá el QR con los ojos.</p>
+      <div class="radar" id="radar" data-level="0" data-on="0">
+        <svg viewBox="0 0 200 200" aria-hidden="true">
+          <defs>
+            <linearGradient id="sw" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0" stop-color="#ffb238" stop-opacity="0"/><stop offset="1" stop-color="#ffb238" stop-opacity=".35"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring r1" cx="100" cy="100" r="92"/>
+          <circle class="ring r2" cx="100" cy="100" r="68"/>
+          <circle class="ring r3" cx="100" cy="100" r="44"/>
+          <circle class="ring r4" cx="100" cy="100" r="20"/>
+          <line class="grid" x1="100" y1="6" x2="100" y2="194"/>
+          <line class="grid" x1="6" y1="100" x2="194" y2="100"/>
+          <path class="sweep" d="M100 100 L100 8 A92 92 0 0 1 165 35 Z" fill="url(#sw)"/>
+          <circle class="core" cx="100" cy="100" r="6"/>
+        </svg>
+        <div class="radar-label" id="radarLabel">APAGADO</div>
+      </div>
+      <p class="muted" id="radarInfo">Detecta la estación activa más cercana. El GPS en el monte falla 10–30 m: usalo para orientarte y buscá el QR con los ojos.</p>
       <div class="row">
         <button id="radarBtn">Encender radar</button>
         <select id="sonarMode" class="shrink" style="width:auto">
@@ -63,7 +104,7 @@
           <option value="sound">🔊 Sonido</option>
         </select>
       </div>
-      <p class="muted" style="margin:8px 0 0;font-size:.8rem">Ojo: el sonido y la luz de la pantalla pueden delatarlos ante las Sombras.</p>
+      <p class="muted" style="margin:8px 0 0;font-size:.78rem">Ojo: el sonido y la luz de la pantalla pueden delatarlos ante las Sombras.</p>
     </div>
 
     <div class="card">
@@ -89,13 +130,16 @@
   <div class="bottom-bar hidden" id="bottomBar">
     <div class="screen-meter" id="screenMeter"></div>
     <div class="inner">
-      <button class="primary big" id="scanBtn">ESCANEAR</button>
-      <button class="danger shrink" id="sosBtn" style="font-weight:800">SOS</button>
+      <button class="primary big" id="scanBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"/></svg>
+        ESCANEAR
+      </button>
+      <button class="danger shrink" id="sosBtn">SOS</button>
     </div>
   </div>
 
   <!-- Overlays -->
-  <div id="lock" class="overlay hidden">
+  <div id="lock" class="overlay bad hidden">
     <div class="big-icon">📵</div>
     <h2>INTERFERENCIA</h2>
     <p class="big-text">Demasiado tiempo con la pantalla encendida. La señal se cortó.</p>
@@ -116,11 +160,11 @@
     <button class="primary" id="alertOk" style="max-width:220px">Entendido</button>
   </div>
 
-  <div id="sos" class="overlay hidden">
+  <div id="sos" class="overlay bad hidden">
     <div class="big-icon">🆘</div>
     <h2>¿Necesitan ayuda?</h2>
     <p class="big-text">Si alguien se lastimó o se perdieron, quédense juntos y llamen ya.</p>
-    <a id="sosCall" class="primary" style="display:block;background:var(--bad);color:#fff;padding:16px;border-radius:12px;font-weight:800;text-decoration:none;margin-bottom:10px"></a>
+    <a id="sosCall" style="display:block;background:var(--bad);color:#fff;padding:16px;border-radius:12px;font-weight:800;text-decoration:none;margin-bottom:10px"></a>
     <p class="muted">También pueden ir a la luz más cercana o gritar "¡AYUDA!": los monitores responden.</p>
     <button id="sosClose" style="max-width:220px">Cerrar</button>
   </div>

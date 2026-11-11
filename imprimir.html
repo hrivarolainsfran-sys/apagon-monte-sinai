@@ -5,29 +5,29 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>APAGÓN · Imprimir QRs</title>
   <link rel="icon" href="icon.svg">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Permanent+Marker&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=swap">
   <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
   <style>
-    :root { --ink: #3b1f0e; --sand: #e9b864; --brush: 'Permanent Marker', cursive; }
+    :root { --ink: #0c1118; --sand: #ffb238; --brush: 'Black Ops One', 'Arial Black', sans-serif; }
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 16px; font: 14px/1.35 system-ui, sans-serif; color: var(--ink); background: #f4ead8; }
-    .no-print { max-width: 900px; margin: 0 auto 16px; background: #fff; border: 1px solid #d8c3a0; border-radius: 12px; padding: 14px; }
+    body { margin: 0; padding: 16px; font: 14px/1.35 system-ui, sans-serif; color: var(--ink); background: #eef1f5; }
+    .no-print { max-width: 900px; margin: 0 auto 16px; background: #fff; border: 1px solid #cdd5df; border-radius: 12px; padding: 14px; }
     .no-print button { font: inherit; padding: 10px 16px; border-radius: 10px; border: 0; background: var(--ink); color: #fff; cursor: pointer; }
     h1, h2 { font-family: var(--brush); font-weight: 400; margin: .2em 0; }
     h2.section { max-width: 900px; margin: 18px auto 8px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; max-width: 900px; margin: 0 auto; }
     .card { background: #fff; border: 3px solid var(--ink); border-radius: 14px; padding: 12px; text-align: center; break-inside: avoid; page-break-inside: avoid; position: relative; }
     .card .head { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--brush); font-size: 1.35rem; }
-    .card .sub { font-size: .85rem; color: #6d4a2c; }
+    .card .sub { font-size: .85rem; color: #4b5563; }
     .qr { width: 100%; max-width: 230px; margin: 8px auto 4px; display: block; }
     .qr svg { width: 100%; height: auto; display: block; }
     .code { font: 700 1rem ui-monospace, Menlo, monospace; letter-spacing: .12em; }
-    .brandline { font-family: var(--brush); font-size: .75rem; color: #8a6440; margin-top: 4px; }
+    .brandline { font-family: var(--brush); font-size: .75rem; color: #5b6676; margin-top: 4px; }
     .brandline img { height: 18px; vertical-align: middle; border-radius: 3px; }
     .big .qr { max-width: 340px; }
     .big { grid-column: 1 / -1; }
     .team { border-width: 6px; }
-    .where { border-top: 1px dashed #b99; margin-top: 8px; padding-top: 6px; font-size: .78rem; color: #7a5a3a; text-align: left; }
+    .where { border-top: 1px dashed #b8c1cc; margin-top: 8px; padding-top: 6px; font-size: .78rem; color: #374151; text-align: left; }
     @media print {
       body { background: #fff; padding: 0; }
       .no-print { display: none; }
@@ -66,7 +66,7 @@
 
     let html = `<h2 class="section first">1 · Inicio y Refugio</h2><div class="grid">`;
     html += card({ title: '📲 ENTRÁ AL JUEGO', sub: 'Escaneá con la cámara del celular para abrir la app', code: '', qrText: appUrl, cls: 'big', extra: `<div class="sub">${esc(appUrl)}</div>` });
-    html += card({ title: '🔥 REFUGIO', sub: 'Escaneá aquí para asegurar la mochila', code: GAME.base.code, cls: 'big' });
+    html += card({ title: '🔥 REFUGIO', sub: 'Escaneá aquí para asegurar la mochila', code: GAME.base.code, cls: 'big', extra: GAME.base.lugar ? `<div class="where">📍 ${esc(GAME.base.lugar)}</div>` : '' });
     html += `</div>`;
 
     html += `<h2 class="section">2 · Estaciones de recursos</h2><div class="grid">`;
@@ -76,7 +76,7 @@
         title: `${r.icon} ${esc(s.name)}`,
         sub: `${esc(r.name)} · +${s.amount} por saqueo${s.radar === false ? ' · 🕳 secreta (no sale en el radar)' : ''}`,
         code: s.code,
-        extra: `<div class="where">Ubicación: ______________________________</div>`,
+        extra: `<div class="where">📍 Esconder en: <b>${esc(s.lugar || '______________________________')}</b></div>`,
       });
     }
     html += `</div>`;
