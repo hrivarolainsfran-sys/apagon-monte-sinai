@@ -14,12 +14,43 @@ registerSW();
 $('#brandLine').textContent = [GAME.brand?.name, GAME.brand?.tagline].filter(Boolean).join(' · ');
 
 // ---------------------------------------------------------------- columnas (se crean una vez)
-const FLAME = `<svg class="flame" viewBox="0 0 100 120" aria-hidden="true">
-  <ellipse cx="50" cy="112" rx="34" ry="6" fill="#1a2330"/>
-  <path d="M30 110 L70 98 M30 98 L70 110" stroke="#5a3a22" stroke-width="7" stroke-linecap="round"/>
-  <g class="fire" style="transform-origin:50% 100%">
-    <path fill="url(#fg)" d="M50 6 C58 26 76 38 76 66 C76 88 64 104 50 104 C36 104 24 88 24 66 C24 50 34 42 38 30 C42 44 46 48 50 50 C48 36 46 22 50 6 Z"/>
-    <path fill="#fff3c4" opacity=".75" d="M50 56 C56 66 62 72 62 84 C62 96 56 102 50 102 C44 102 38 96 38 86 C38 76 46 70 50 56 Z"/>
+const FLAME = id => `<svg class="flame" viewBox="0 0 180 220" aria-hidden="true">
+  <defs>
+    <radialGradient id="glow-${id}"><stop stop-color="#ff9d24" stop-opacity=".5"/><stop offset="1" stop-color="#ff6a12" stop-opacity="0"/></radialGradient>
+    <linearGradient id="wood-${id}" x2="0" y2="1"><stop stop-color="#2a1710"/><stop offset=".4" stop-color="#67402a"/><stop offset=".58" stop-color="#352018"/><stop offset="1" stop-color="#130e0b"/></linearGradient>
+    <linearGradient id="outer-${id}" x2=".15" y2="1"><stop stop-color="#ff3b08" stop-opacity=".1"/><stop offset=".35" stop-color="#ef4b0c"/><stop offset=".72" stop-color="#ff9d18"/><stop offset="1" stop-color="#ffcb53"/></linearGradient>
+    <linearGradient id="inner-${id}" x2="0" y2="1"><stop stop-color="#ffe994" stop-opacity=".2"/><stop offset=".5" stop-color="#ffca46"/><stop offset="1" stop-color="#fff3c0"/></linearGradient>
+    <filter id="heat-${id}" x="-30%" y="-20%" width="160%" height="150%"><feTurbulence type="fractalNoise" baseFrequency=".045 .09" numOctaves="2" seed="7" result="noise"/><feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/></filter>
+    <filter id="soft-${id}"><feGaussianBlur stdDeviation="1.2"/></filter>
+  </defs>
+  <ellipse cx="90" cy="194" rx="75" ry="18" fill="#030807" opacity=".7"/>
+  <ellipse cx="90" cy="175" rx="86" ry="43" fill="url(#glow-${id})"/>
+  <g fill="#373b30" stroke="#53513d" stroke-width=".8">
+    <ellipse cx="29" cy="195" rx="11" ry="6"/><ellipse cx="48" cy="204" rx="12" ry="6"/><ellipse cx="73" cy="208" rx="11" ry="5"/><ellipse cx="99" cy="209" rx="12" ry="5"/><ellipse cx="126" cy="205" rx="12" ry="6"/><ellipse cx="148" cy="196" rx="11" ry="6"/>
+  </g>
+  <g stroke-linecap="round">
+    <path d="M40 191 137 171 M43 172 135 198 M62 201 115 166" stroke="#120e0b" stroke-width="16"/>
+    <path d="M40 189 137 169 M43 170 135 196 M62 199 115 164" stroke="url(#wood-${id})" stroke-width="12"/>
+    <path d="m45 187 17-4m10-2 23-5m15-2 20-4M48 171l20 6m12 4 23 6m12 3 14 4M66 196l14-10m11-8 18-11" stroke="#b37742" stroke-opacity=".45" stroke-width="1.2"/>
+    <path d="m69 187 14-3m9-6 12-2m-27 11 21 7m-8-15 9-6" stroke="#ff6c1c" stroke-width="2"/>
+  </g>
+  <g class="fire" style="transform-origin:90px 190px">
+    <ellipse cx="90" cy="163" rx="52" ry="55" fill="url(#glow-${id})"/>
+    <g filter="url(#heat-${id})">
+      <g><animateTransform attributeName="transform" type="translate" values="0 0;2 -3;-1 1;0 0" dur="1.8s" begin="-${id.length * .3}s" repeatCount="indefinite"/>
+        <path fill="url(#outer-${id})" d="M89 187C58 189 41 170 48 149c4-14 16-22 12-39 14 8 17 19 14 28 16-17-4-39 7-61 6-13 15-21 12-40 25 23-1 42 12 64 8 13 6 22 4 31 9-11 19-19 14-34 24 18 8 41 18 57 11 22-7 36-52 32Z"/>
+        <path fill="url(#outer-${id})" opacity=".85" d="M66 186c-25-11-32-26-23-47 1 18 17 17 14 33 7-11 6-22 4-28 20 12 22 31 5 42m45-3c29-12 33-28 24-47 0 16-16 16-15 29-5-10-2-20 1-25-19 8-25 28-10 43Z"/>
+      </g>
+      <g><animateTransform attributeName="transform" type="skewX" values="-2;3;-1;-2" dur="1.3s" repeatCount="indefinite"/>
+        <path fill="url(#inner-${id})" d="M90 188c-25 0-35-16-23-37 6-11 11-19 8-30 15 9 15 21 13 31 19-22 1-38 15-56-1 21 16 30 12 49-2 8-7 13-5 21 4-5 9-11 9-18 13 23-2 40-29 40Z"/>
+        <path fill="#fff6ce" opacity=".9" filter="url(#soft-${id})" d="M89 187c-15-1-19-12-10-24 5-6 9-12 8-20 14 10 4 18 10 25 4-5 5-10 5-14 12 19 1 33-13 33Z"/>
+      </g>
+    </g>
+    <g fill="#ffbd58">
+      <circle cx="69" cy="132" r="1.2"><animate attributeName="cy" values="157;53" dur="2.9s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.9;0" dur="2.9s" repeatCount="indefinite"/></circle>
+      <circle cx="108" cy="120" r=".9"><animate attributeName="cy" values="165;38" dur="3.7s" repeatCount="indefinite"/><animate attributeName="cx" values="101;119;112" dur="3.7s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0" dur="3.7s" repeatCount="indefinite"/></circle>
+      <circle cx="85" cy="95" r=".7"><animate attributeName="cy" values="149;24" dur="3.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.8;0" dur="3.1s" repeatCount="indefinite"/></circle>
+    </g>
   </g></svg>`;
 
 const cols = {};
@@ -27,7 +58,7 @@ $('#teams').innerHTML = GAME.teams.map(t => `
   <section class="tcol" id="col-${t.id}" style="--c:${t.color}">
     <div class="pos"></div>
     <div class="tname">${esc(t.name.toUpperCase())}</div>
-    ${FLAME}
+    ${FLAME(t.id)}
     <div class="pct"></div>
     <div class="res-list">${RES.map(r => `<div class="bank-row" data-r="${r.id}"><span>${r.icon}</span><div class="bar"><i></i></div><span class="ct"></span></div>`).join('')}</div>
     <div class="foot"><div class="score">0<small>pts</small></div><div class="stats"></div></div>
